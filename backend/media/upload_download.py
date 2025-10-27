@@ -1,6 +1,6 @@
 import os
 import sys  # for command line args
-import mimetypes # for MIME type detection
+import mimetypes # for MIME type detection(Multipurpose Internet Mail Extensions): standard identifier that indicates the format of a file or document to a computer system
 from io import BytesIO
 from datetime import datetime
 from django.conf import settings
@@ -10,12 +10,10 @@ from django.views.static import serve as media_serve
 from django.http import JsonResponse, HttpResponseNotFound
 from django.core.files.base import ContentFile
 from django.http import FileResponse, Http404
-
-from rest_framework import views, status, serializers
-from rest_framework.response import Response
-
 from .models import Asset, AssetVersion
 from .serializers import AssetSerializer, AssetVersionSerializer
+from rest_framework import views, status, serializers
+from rest_framework.response import Response
 from rest_framework import viewsets, status
 # from rest_framework.decorators import action
 # from rest_framework.response import Response
@@ -86,16 +84,16 @@ from rest_framework import viewsets, status
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 # Serializers ----------------
-class AssetSerializer(serializers.ModelSerializer):
+class AssetSerializer(serializers.ModelSerializer): # Serializer for Asset model
     class Meta:
         model = Asset
         fields = ["id", "file", "uploaded_at", "original_name", "content_type", "size_bytes"]
 # Serializers ----------------
 
 # Validation helpers ----------------
-ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".webm", ".ogg", ".glb"}
-ALLOWED_MIME_PREFIXES = ("image/", "video/")
-ALLOWED_MIME_EXACT = {"model/gltf-binary"}  # for .glb
+ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".ogg", ".glb"}
+ALLOWED_MIME_PREFIXES = ("image/", "video/")    # for images and videos
+ALLOWED_MIME_EXACT = {"model/gltf-binary"}  # for .glb models
 
 def is_allowed(filename: str, content_type: str) -> bool:
     extention = os.path.splitext(filename.lower())[1] # get file extension
@@ -112,8 +110,8 @@ def is_allowed(filename: str, content_type: str) -> bool:
 # Upload_download ----------------
 class AssetUpload_download(views.APIView):   
     def get(self, request):  # lists recent assets
-        qs = Asset.objects.order_by("-uploaded_at")[:100]   
-        data = [obj.to_dict() for obj in qs]    #serialize assets to list of dicts
+        querySet = Asset.objects.order_by("-uploaded_at")[:100]  #     
+        data = [x.to_dict() for x in querySet]    #serialize assets to list of dicts
         return Response(data)
     
     # Uploader ----------------
@@ -122,10 +120,10 @@ class AssetUpload_download(views.APIView):
         if not files:   #validates if files exist
             return Response({"detail": "No files uploaded. Use 'files' field."},status=status.HTTP_400_BAD_REQUEST)
         created = []
-        for f in files:
-            fname = f.name
-            ctype = getattr(f, "content_type", "") or mimetypes.guess_type(fname)[0] or ""
-            if not is_allowed(fname, ctype):
+        for f in files:  #process each uploaded file
+            fname = f.name  # original filename
+            ctype = getattr(f, "content_type", "") or mimetypes.guess_type(fname)[0] or ""  # determine content type
+            if not is_allowed(fname, ctype):    #validate file type
                 return Response({"detail": f"File type not allowed: {fname}"}, status=415)
 
             storage = FileSystemStorage(location=settings.MEDIA_ROOT)   #sets storage location
@@ -134,8 +132,8 @@ class AssetUpload_download(views.APIView):
 
             asset = Asset.objects.create(   #generates asset metadata in database
                 file=saved_path, # relative path to file
-                original_name=fname,
-                content_type=ctype,
+                original_name=fname,    # original filename
+                content_type=ctype,     # MIME type
                 size_bytes=getattr(f, "size", 0),
             )
             created.append(asset.to_dict())
@@ -154,6 +152,22 @@ class AssetUpload_download(views.APIView):
         return response
     # downloader----------------
 # Upload_download ----------------
+
+# # Media serve view from MEDIA_ROOT ----------------
+# def media_serve(request, path):
+#     fullpath = os.path.join(settings.MEDIA_ROOT, path)
+#     if not os.path.exists(fullpath):
+#         return HttpResponseNotFound("Not Found")
+#     with open(fullpath, "rb") as fh:
+#         data = fh.read()
+#     ctype = mimetypes.guess_type(fullpath)[0] or "application/octet-stream"
+#     resp = JsonResponse({"error": "Unsupported method"}, status=405)
+#     if request.method == "GET":
+#         from django.http import HttpResponse
+#         r = HttpResponse(data, content_type=ctype)
+#         return r
+#     return resp
+# # Media serve view from MEDIA_ROOT ----------------
 
 # #URLs ----------------
 # urlpatterns = [ # URL patterns for the views
