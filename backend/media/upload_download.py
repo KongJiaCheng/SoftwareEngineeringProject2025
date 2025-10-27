@@ -146,12 +146,11 @@ class AssetUpload_download(views.APIView):
 
     # downloader----------------
     def download(self, request, pk):
-        """Custom downloader for a specific file"""
-        asset = self.get_asset(pk)
-        file_path = self.get_file_path(asset)
+        asset = self.get_asset(pk) # retrieve asset by primary key
+        file_path = self.get_file_path(asset)   # get full file path
         if not os.path.exists(file_path):
             raise Http404("File not found on disk")
-        response = FileResponse(open(file_path, "rb"), as_attachment=True, filename=asset.original_name)
+        response = FileResponse(open(file_path, "rb"), as_attachment=True, filename=asset.original_name)    # create file response for download
         return response
     # downloader----------------
 # Upload_download ----------------
