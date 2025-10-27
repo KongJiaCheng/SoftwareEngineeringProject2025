@@ -9,13 +9,14 @@ from django.urls import path, re_path
 from django.views.static import serve as media_serve
 from django.http import JsonResponse, HttpResponseNotFound
 from django.core.files.base import ContentFile
+from django.http import FileResponse, Http404
 
 from rest_framework import views, status, serializers
 from rest_framework.response import Response
 
 from .models import Asset, AssetVersion
 from .serializers import AssetSerializer, AssetVersionSerializer
-# from rest_framework import viewsets, status
+from rest_framework import viewsets, status
 # from rest_framework.decorators import action
 # from rest_framework.response import Response
 
@@ -97,33 +98,29 @@ ALLOWED_MIME_PREFIXES = ("image/", "video/")
 ALLOWED_MIME_EXACT = {"model/gltf-binary"}  # for .glb
 
 def is_allowed(filename: str, content_type: str) -> bool:
-    ext = os.path.splitext(filename.lower())[1]
-    if ext in ALLOWED_EXTS:
+    extention = os.path.splitext(filename.lower())[1] # get file extension
+    if extention in ALLOWED_EXTS: # check extension
         return True
     # Fallback to MIME
-    if any(content_type.startswith(p) for p in ALLOWED_MIME_PREFIXES):
+    if any(content_type.startswith(p) for p in ALLOWED_MIME_PREFIXES):      # check MIME type prefix
         return True
     if content_type in ALLOWED_MIME_EXACT:
         return True
     return False
 # Validation helpers ----------------
 
-# Views ----------------
-class AssetListCreateView(views.APIView):
-    """
-    GET: List recent assets (most recent first)
-    POST: Upload one or multiple files using field name "files"
-    """
-    def get(self, request):
-        qs = Asset.objects.order_by("-uploaded_at")[:100]
-        data = [obj.to_dict() for obj in qs]
+# Upload_download ----------------
+class AssetUpload_download(views.APIView):   
+    def get(self, request):  # lists recent assets
+        qs = Asset.objects.order_by("-uploaded_at")[:100]   
+        data = [obj.to_dict() for obj in qs]    #serialize assets to list of dicts
         return Response(data)
-
-    def post(self, request):
+    
+    # Uploader ----------------
+    def post(self, request):    # handles file uploads
         files = request.FILES.getlist("files")  # get uploaded files
         if not files:   #validates if files exist
-            return Response({"detail": "No files uploaded. Use 'files' field."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "No files uploaded. Use 'files' field."},status=status.HTTP_400_BAD_REQUEST)
         created = []
         for f in files:
             fname = f.name
@@ -145,7 +142,19 @@ class AssetListCreateView(views.APIView):
             asset.file.save(os.path.join(upload_dir, fname), f, save=False) # saves the file to the storage
             asset.save()   # saves the asset metadata to the database
         return Response({"uploaded": created}, status=status.HTTP_201_CREATED)
-# Views ----------------
+    # Uploader ----------------
+
+    # downloader----------------
+    def download(self, request, pk):
+        """Custom downloader for a specific file"""
+        asset = self.get_asset(pk)
+        file_path = self.get_file_path(asset)
+        if not os.path.exists(file_path):
+            raise Http404("File not found on disk")
+        response = FileResponse(open(file_path, "rb"), as_attachment=True, filename=asset.original_name)
+        return response
+    # downloader----------------
+# Upload_download ----------------
 
 # #URLs ----------------
 # urlpatterns = [ # URL patterns for the views
