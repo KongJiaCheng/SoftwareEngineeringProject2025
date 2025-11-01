@@ -1,35 +1,47 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
-### Backend
-## Setup Virtual Environment and add dependencies
-
-# go to backend
+# Getting Started
+## Backend (Setup Virtual Environment and add dependencies)
+### go to backend
 ```bash
 cd backend
 ```
-# create Virtual Environment
+### create Virtual Environment
 ```bash
 python -m ven .venv
 ```
-# start Virtual Environment
+### start Virtual Environment
 ```bash
 .\.venv\Scripts\Activate.ps1
 ```
-# install dependencies
+### install dependencies
 ```bash
 pip install -r requirements.txt
 ```
-# migration
+### Database
+#### install postgre and set password to software.
+
+### create dataabse (do this in terminal)
+```bash
+& "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres dam_db
+```
+### Password
+```bash
+software
+```
+#### open pgAdmin4 then right-click "dam_db" database and click restore.
+#### enter "dam_project.backup" file path and click backup.
+
+### migration
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
-# start server (use everytime to run backend)
+### start server (use everytime to run backend)
 ```bash
 python manage.py runserver 0.0.0.0:8000
 ```
-### Frontend
+## Frontend
 First, run the development server:
 
 ```bash (used Everytime to run frontend)
