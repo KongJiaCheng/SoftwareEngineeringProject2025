@@ -1,10 +1,26 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
+### Backend
+## Setup Virtual Environment and add dependencies
+# go to backend
+cd backend
+# create Virtual Environment
+python -m -ven .venv
+# start Virtual Environment
+.\.venv\Scripts\Activate.ps1
+# install dependencies
+pip install -r requirements.txt
+# migration
+python manage.py makemigrations
+python manage.py migrate
+# start server (use everytime to run backend)
+python manage.py runserver 0.0.0.0:8000
 
+### Frontend
 First, run the development server:
 
-```bash
+```bash (used Everytime to run frontend)
 npm run dev
 # or
 yarn dev
@@ -34,3 +50,4 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
