@@ -3,6 +3,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Getting Started
 ### Backend
 ## Setup Virtual Environment and add dependencies
+```bash
 # go to backend
 cd backend
 # create Virtual Environment
@@ -16,7 +17,7 @@ python manage.py makemigrations
 python manage.py migrate
 # start server (use everytime to run backend)
 python manage.py runserver 0.0.0.0:8000
-
+```
 ### Frontend
 First, run the development server:
 
