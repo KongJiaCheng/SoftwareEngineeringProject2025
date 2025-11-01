@@ -3,19 +3,30 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Getting Started
 ### Backend
 ## Setup Virtual Environment and add dependencies
-```bash
+
 # go to backend
+```bash
 cd backend
+```
 # create Virtual Environment
+```bash
 python -m -ven .venv
+```
 # start Virtual Environment
+```bash
 .\.venv\Scripts\Activate.ps1
+```
 # install dependencies
+```bash
 pip install -r requirements.txt
+```
 # migration
+```bash
 python manage.py makemigrations
 python manage.py migrate
+```
 # start server (use everytime to run backend)
+```bash
 python manage.py runserver 0.0.0.0:8000
 ```
 ### Frontend
