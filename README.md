@@ -8,7 +8,7 @@ cd backend
 ```
 ### create Virtual Environment
 ```bash
-python -m ven .venv
+python -m venv .venv
 ```
 ### start Virtual Environment
 ```bash
