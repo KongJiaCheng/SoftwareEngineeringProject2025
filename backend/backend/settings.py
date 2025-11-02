@@ -6,6 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "your-secret-key"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
+# AUTH_USER_MODEL = "Users_User"
 
 INSTALLED_APPS = [  # Installed applications
     "django.contrib.admin",
@@ -17,6 +18,7 @@ INSTALLED_APPS = [  # Installed applications
     "rest_framework",
     "corsheaders",
     "assets",
+    "metadata"
 ]
 
 MIDDLEWARE = [  # Middleware configuration
