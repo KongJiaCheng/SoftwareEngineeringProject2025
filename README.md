@@ -1,10 +1,50 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Getting Started
+## Backend (Setup Virtual Environment and add dependencies)
+### go to backend
+```bash
+cd backend
+```
+### create Virtual Environment
+```bash
+python -m venv .venv
+```
+### start Virtual Environment
+```bash
+.\.venv\Scripts\Activate.ps1
+```
+### install dependencies
+```bash
+pip install -r requirements.txt
+```
+### Database
+#### install postgre and set password to software.
 
+### create dataabse (do this in terminal)
+```bash
+& "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres dam_db
+```
+### Password
+```bash
+software
+```
+#### open pgAdmin4 then right-click "dam_db" database and click restore.
+#### enter "dam_project.backup" file path and click backup.
+
+### migration
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+### start server (use everytime to run backend)
+```bash
+python manage.py runserver 0.0.0.0:8000
+```
+## Frontend
 First, run the development server:
 
-```bash
+```bash (used Everytime to run frontend)
 npm run dev
 # or
 yarn dev
@@ -34,3 +74,4 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+

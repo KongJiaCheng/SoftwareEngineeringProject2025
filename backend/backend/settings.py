@@ -7,7 +7,7 @@ SECRET_KEY = "your-secret-key"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
-INSTALLED_APPS = [
+INSTALLED_APPS = [  # Installed applications
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -19,7 +19,7 @@ INSTALLED_APPS = [
     "assets",
 ]
 
-MIDDLEWARE = [
+MIDDLEWARE = [  # Middleware configuration
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -32,12 +32,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "backend.urls"
 
-DATABASES = {
+DATABASES = {   # Database configuration
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "dam_db",
         "USER": "postgres",
-        "PASSWORD": "Password",
+        "PASSWORD": "software",
         "HOST": "localhost",
         "PORT": "5432",
     }
@@ -49,7 +49,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "storage")
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-REST_FRAMEWORK = {
+REST_FRAMEWORK = {  # Django REST Framework configuration
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
@@ -58,3 +58,20 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+
+TEMPLATES = [   # Template configuration
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",   
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
