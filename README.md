@@ -39,7 +39,7 @@ python manage.py migrate
 ```
 ### start server (use everytime to run backend)
 ```bash
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver
 ```
 ## Frontend
 First, run the development server:
