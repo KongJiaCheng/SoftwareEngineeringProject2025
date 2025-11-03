@@ -17,14 +17,14 @@ from rest_framework.response import Response
 from rest_framework import viewsets, status
 
 
-# Serializers ----------------
+# Serializers # 
 class AssetSerializer(serializers.ModelSerializer): # Serializer for Asset model
     class Meta:
         model = Asset
         fields = ["id", "file", "uploaded_at", "original_name", "content_type", "size_bytes"]
-# Serializers ----------------
+# Serializers # 
 
-# Validation helpers ----------------
+# Validation helpers # 
 ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".ogg", ".glb"}
 ALLOWED_MIME_PREFIXES = ("image/", "video/")    # for images and videos
 ALLOWED_MIME_EXACT = {"model/gltf-binary"}  # for .glb models
@@ -39,16 +39,16 @@ def is_allowed(filename: str, content_type: str) -> bool:
     if content_type in ALLOWED_MIME_EXACT:
         return True
     return False
-# Validation helpers ----------------
+# Validation helpers # 
 
-# Upload_download ----------------
+# Upload_download # 
 class AssetUpload_download(views.APIView):   
     def get(self, request):  # lists recent assets
         querySet = Asset.objects.order_by("-uploaded_at")[:100]  #     
         data = [x.to_dict() for x in querySet]    #serialize assets to list of dicts
         return Response(data)
     
-    # Uploader ----------------
+    # Uploader # 
     def post(self, request):    # handles file uploads
         files = request.FILES.getlist("files")  # get uploaded files
         if not files:   #validates if files exist
@@ -74,9 +74,9 @@ class AssetUpload_download(views.APIView):
             asset.file.save(os.path.join(upload_dir, fname), f, save=False) # saves the file to the storage
             asset.save()   # saves the asset metadata to the database
         return Response({"uploaded": created}, status=status.HTTP_201_CREATED)
-    # Uploader ----------------
+    # Uploader # 
 
-    # downloader----------------
+    # downloade #r
     def download(self, request, pk):
         asset = self.get_asset(pk) # retrieve asset by primary key
         file_path = self.get_file_path(asset)   # get full file path
@@ -84,10 +84,10 @@ class AssetUpload_download(views.APIView):
             raise Http404("File not found on disk")
         response = FileResponse(open(file_path, "rb"), as_attachment=True, filename=asset.original_name)    # create file response for download
         return response
-    # downloader----------------
-# Upload_download ----------------
+    # downloade #r
+# Upload_download # 
 
-# # Media serve view from MEDIA_ROOT ----------------
+# # Media serve view from MEDIA_ROOT # 
 # def media_serve(request, path):
 #     fullpath = os.path.join(settings.MEDIA_ROOT, path)
 #     if not os.path.exists(fullpath):
@@ -101,19 +101,19 @@ class AssetUpload_download(views.APIView):
 #         r = HttpResponse(data, content_type=ctype)
 #         return r
 #     return resp
-# # Media serve view from MEDIA_ROOT ----------------
+# # Media serve view from MEDIA_ROOT # 
 
-# #URLs ----------------
+# #URLs # 
 # urlpatterns = [ # URL patterns for the views
 #     path("api/assets/", AssetListCreateView.as_view()),
 #     re_path(r"^media/(?P<path>.*)$", media_serve),
 # ]
-# #URLs ----------------
+# #URLs # 
 
-# # Runserver ----------------
+# # Runserver # 
 # if __name__ == "__main__":
 #     # Allow "python server.py runserver 0.0.0.0:8000" etc.
 #     if len(sys.argv) == 1:
 #         sys.argv += ["runserver", "127.0.0.1:8000"]
 #     execute_from_command_line(sys.argv)
-# # Runserver ----------------
+# # Runserver # 
