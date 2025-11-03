@@ -40,6 +40,7 @@ python manage.py migrate
 ### start server (use everytime to run backend)
 ```bash
 python manage.py runserver
+paste this url link in the browser: http://127.0.0.1:8000/admin/assets
 ```
 ## Frontend
 First, run the development server:
