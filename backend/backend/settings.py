@@ -18,7 +18,10 @@ INSTALLED_APPS = [  # Installed applications
     "rest_framework",
     "corsheaders",
     "assets",
-    "metadata"
+    "metadata",
+    "upload_download",
+    # "asset_preview"
+    
 ]
 
 MIDDLEWARE = [  # Middleware configuration
@@ -45,9 +48,18 @@ DATABASES = {   # Database configuration
     }
 }
 
+# added 3/11/2025
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000"]
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000"]
+# added 3/11/2025
+
 STATIC_URL = "/static/"
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "storage")
+MEDIA_URL = "/media/"   
+# added 3/11/2025
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
+# added 3/11/2025
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 CORS_ALLOW_ALL_ORIGINS = True
 

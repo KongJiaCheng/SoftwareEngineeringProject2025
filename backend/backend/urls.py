@@ -6,6 +6,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/assets/", include("assets.urls")),
+    path("api/upload/", include("upload_download.urls")),
+    # path("api/preview/", include("asset_preview.urls")),
+
 ]
 
 if settings.DEBUG:

@@ -33,41 +33,41 @@ class AssetMetadata(models.Model):
     duration = models.FloatField(null=True, blank=True)        # seconds (videos)
     dimensions = models.CharField(max_length=100, blank=True)  # 3D model dimensions
 
-    def save(self, *args, **kwargs):
-        """Automatically detect and store metadata when saving a file"""
-        if self.file:
-            file_path = self.file.path
-            self.asset_name = os.path.basename(self.file.name)
+    # def save(self, *args, **kwargs):
+    #     """Automatically detect and store metadata when saving a file"""
+    #     if self.file:
+    #         file_path = self.file.path
+    #         self.asset_name = os.path.basename(self.file.name)
 
-            # File size (in MB)
-            self.file_size = round(self.file.size / (1024 * 1024), 2)
+    #         # File size (in MB)
+    #         self.file_size = round(self.file.size / (1024 * 1024), 2)
 
-            # Detect file type by extension
-            ext = os.path.splitext(self.file.name)[1].lower()
-            if ext in ['.jpg', '.jpeg', '.png']:
-                self.file_type = 'image'
-                try:
-                    with Image.open(self.file) as img:
-                        self.resolution = f"{img.width}x{img.height}"
-                except Exception:
-                    self.resolution = "Unknown"
-            elif ext in ['.mp4', '.mov', '.avi']:
-                self.file_type = 'video'
-                # Optional: can use moviepy for duration if installed
-                try:
-                    from moviepy.editor import VideoFileClip
-                    clip = VideoFileClip(file_path)
-                    self.duration = round(clip.duration, 2)
-                    clip.close()
-                except Exception:
-                    self.duration = None
-            elif ext in ['.glb', '.gltf', '.obj', '.fbx']:
-                self.file_type = '3d'
-                self.dimensions = "3D model (metadata extraction optional)"
-            else:
-                self.file_type = 'other'
+    #         # Detect file type by extension
+    #         ext = os.path.splitext(self.file.name)[1].lower()
+    #         if ext in ['.jpg', '.jpeg', '.png']:
+    #             self.file_type = 'image'
+    #             try:
+    #                 with Image.open(self.file) as img:
+    #                     self.resolution = f"{img.width}x{img.height}"
+    #             except Exception:
+    #                 self.resolution = "Unknown"
+    #         elif ext in ['.mp4', '.mov', '.avi']:
+    #             self.file_type = 'video'
+    #             # Optional: can use moviepy for duration if installed
+    #             try:
+    #                 from moviepy.editor import VideoFileClip
+    #                 clip = VideoFileClip(file_path)
+    #                 self.duration = round(clip.duration, 2)
+    #                 clip.close()
+    #             except Exception:
+    #                 self.duration = None
+    #         elif ext in ['.glb', '.gltf', '.obj', '.fbx']:
+    #             self.file_type = '3d'
+    #             self.dimensions = "3D model (metadata extraction optional)"
+    #         else:
+    #             self.file_type = 'other'
 
-        super().save(*args, **kwargs)
+    #     super().save(*args, **kwargs)
 
     def __str__(self):
         return self.asset_name
