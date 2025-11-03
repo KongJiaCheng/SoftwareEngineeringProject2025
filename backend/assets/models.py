@@ -1,5 +1,6 @@
 from django.db import models
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
+from django.conf import settings
 
 class Asset(models.Model):
     ASSET_TYPES = [
@@ -14,7 +15,7 @@ class Asset(models.Model):
     file = models.FileField(upload_to="uploads/")
     asset_type = models.CharField(max_length=20, choices=ASSET_TYPES, default="other")
     tags = models.CharField(max_length=255, blank=True)
-    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     version = models.IntegerField(default=1)
 

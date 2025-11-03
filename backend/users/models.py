@@ -8,6 +8,8 @@ import uuid
 class User(AbstractUser):
     ROLE_CHOICES = (("admin","Admin"),("editor","Editor"),("viewer","Viewer"))
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="viewer")
+    pass
+
 
 class Tag(models.Model):
     name = models.CharField(max_length=100, unique=True)
