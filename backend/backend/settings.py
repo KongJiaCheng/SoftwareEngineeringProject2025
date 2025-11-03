@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "your-secret-key"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
-INSTALLED_APPS = [
+INSTALLED_APPS = [  # Installed applications
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -52,7 +52,7 @@ TEMPLATES = [
 ]
 ROOT_URLCONF = "backend.urls"
 
-DATABASES = {
+DATABASES = {   # Database configuration
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "dam_system",
@@ -69,7 +69,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-REST_FRAMEWORK = {
+REST_FRAMEWORK = {  # Django REST Framework configuration
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
@@ -78,5 +78,23 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
+
+TEMPLATES = [   # Template configuration
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",   
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
