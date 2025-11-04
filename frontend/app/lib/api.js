@@ -1,3 +1,4 @@
+// A simple wrapper around fetch to call our backend API.
 export async function api(path, init = {}) {
   const res = await fetch(`/api/backend/${path.replace(/^\/+/, "")}`, {
     cache: "no-store",

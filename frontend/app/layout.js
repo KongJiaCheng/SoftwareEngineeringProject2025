@@ -1,3 +1,4 @@
+// layout.js is the root layout for the Next.js application.
 import "./globals.css";
 import { Providers } from "./providers";
 
