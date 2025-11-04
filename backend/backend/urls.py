@@ -5,7 +5,9 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/assets/", include("assets.urls")),
+    #path("api/assets/", include("assets.urls")),
+    #path('api/', include('users.urls')),   # adjust path/app name as needed
+    path("asset_metadata/", include("asset_metadata.urls")),   # handles metadata
 ]
 
 if settings.DEBUG:

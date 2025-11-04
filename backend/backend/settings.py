@@ -6,8 +6,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "your-secret-key"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
-# AUTH_USER_MODEL = "Users_User"
-
 INSTALLED_APPS = [  # Installed applications
     "django.contrib.admin",
     "django.contrib.auth",
@@ -16,28 +14,48 @@ INSTALLED_APPS = [  # Installed applications
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "corsheaders",
-    "assets",
-    "metadata"
+    #"corsheaders",
+    #"assets",
+    #"users",
+    "asset_metadata",
 ]
 
-MIDDLEWARE = [  # Middleware configuration
-    "corsheaders.middleware.CorsMiddleware",
+MIDDLEWARE = [
+    #"corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+
+
     "django.middleware.common.CommonMiddleware",
+
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
 
+
+]
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
 ROOT_URLCONF = "backend.urls"
 
 DATABASES = {   # Database configuration
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "dam_db",
+        "NAME": "dam_system",
         "USER": "postgres",
         "PASSWORD": "software",
         "HOST": "localhost",
@@ -60,6 +78,9 @@ REST_FRAMEWORK = {  # Django REST Framework configuration
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 
 
 TEMPLATES = [   # Template configuration
