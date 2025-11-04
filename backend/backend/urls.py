@@ -7,6 +7,8 @@ import upload_download.views as viewsUploadDownload
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("asset_metadata/", include("asset_metadata.urls")),   # handles metadata
+
     path("api/", include("metadata.api")),        # DRF router for metadata:
     
     # endpoints (function-based API):

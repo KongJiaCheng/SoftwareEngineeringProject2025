@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 ### create dataabse (do this in terminal)
 ```bash
-& "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres dam_db
+& "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres dam_system
 ```
 ### Password
 ```bash
@@ -41,6 +41,7 @@ python manage.py migrate
 ```bash
 python manage.py runserver
 ```
+### paste this url link in the browser: http://127.0.0.1:8000/admin/assets
 ## Frontend
 First, run the development server:
 
