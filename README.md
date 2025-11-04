@@ -43,6 +43,15 @@ python manage.py runserver
 ```
 ### paste this url link in the browser: http://127.0.0.1:8000/admin/asset_metadata/assetmetadata/
 ## Frontend
+
+install dependencies
+```bash
+# got to backend
+cd frontend
+#install dependencies
+npm install react-icons @chakra-ui/react@latest @emotion/react @emotion/styled framer-motion
+```
+
 First, run the development server:
 
 ```bash (used Everytime to run frontend)
