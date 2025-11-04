@@ -23,7 +23,7 @@ INSTALLED_APPS = [  # Installed applications
 ]
 
 MIDDLEWARE = [
-    #"corsheaders.middleware.CorsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
 
@@ -65,18 +65,15 @@ DATABASES = {   # Database configuration
     }
 }
 
-# added 3/11/2025
+
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000"]    #for api#
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000"]    #for api#
-# added 3/11/2025
+
 
 STATIC_URL = "/static/"
 MEDIA_URL = "/media/"   
-# # added 3/11/2025
-# from pathlib import Path
-# BASE_DIR = Path(__file__).resolve().parent.parent
-# # added 3/11/2025
+
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 CORS_ALLOW_ALL_ORIGINS = True
