@@ -1,6 +1,5 @@
 import os
 import mimetypes
-# import moviepy.editor
 from datetime import datetime
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
@@ -10,13 +9,17 @@ from rest_framework.response import Response
 from metadata.models import AssetMetadata
 from .serializers import AssetSerializer
 from rest_framework.decorators import api_view
+# add import at top
+from rest_framework.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from PIL import Image
 # from moviepy.editor import VideoFileClip
 
+
   
 # Uploader # 
-@api_view(["UPLOAD"])
-def upload(self, request):    # handles file uploads
+@api_view(["POST"])
+def upload(request):    # handles file uploads
     files = request.FILES.getlist("files")
     if not files:
         return Response(
@@ -29,20 +32,20 @@ def upload(self, request):    # handles file uploads
     upload_dir = os.path.join("uploads", datetime.now().strftime("%Y/%m/%d"))
 
     for f in files:
-        fname = f.name  # original filename
-        ctype = getattr(f, "content_type", "") or mimetypes.guess_type(fname)[0] or ""  # detect content type
-        if not is_allowed(fname, ctype):
-            return Response({"detail": f"File type not allowed: {fname}"}, status=415)
+        filename = f.name  # original filename
+        contentType = getattr(f, "content_type", "") or mimetypes.guess_type(filename)[0] or ""  # detect content type
+        if not is_allowed(filename, contentType):
+            return Response({"detail": f"File type not allowed: {filename}"}, status=415)
 
         # Save file path
-        saved_path = storage.save(os.path.join(upload_dir, fname), f)
-        full_path = os.path.join(settings.MEDIA_ROOT, saved_path)
+        savedPath = storage.save(os.path.join(upload_dir, filename), f)
+        fullPath = os.path.join(settings.MEDIA_ROOT, savedPath)
 
         #Get Db Fields
         metadata = {
-            "asset_name": fname,
-            "file": saved_path,
-            "file_type": ctype,
+            "asset_name": filename,
+            "file": savedPath,
+            "file_type": contentType,
             "file_size": round(f.size / (1024 * 1024), 2),  # MB
             "resolution": "",
             "duration": None,
@@ -52,15 +55,15 @@ def upload(self, request):    # handles file uploads
         }
 
         
-        if ctype.startswith("image/"):  # If it's an image
+        if contentType.startswith("image/"):  # If it's an image
             try:
-                img = Image.open(full_path)
+                img = Image.open(fullPath)
                 metadata["resolution"] = f"{img.width}x{img.height}"
             except Exception:
                 pass
 
         
-        # elif ctype.startswith("video/"):    # If it's a video
+        # elif contentType.startswith("video/"):    # If it's a video
         #     try:
         #         clip = VideoFileClip(full_path)
         #         metadata["duration"] = round(clip.duration, 2)
@@ -69,7 +72,7 @@ def upload(self, request):    # handles file uploads
         #         pass
 
         
-        elif ctype == "model/gltf-binary":  # If it's a 3D model (.glb)
+        elif contentType == "model/gltf-binary":  # If it's a 3D model (.glb)
             # You could later parse dimensions from metadata['custom_fields']
             metadata["dimensions"] = "Unknown (GLB model)"
 
@@ -81,7 +84,7 @@ def upload(self, request):    # handles file uploads
 # Uploader # 
 
 # Downloader #
-@api_view(["DOWNLOAD"])
+@api_view(["GET"]) 
 def download(self, request, pk):
     asset = self.get_asset(pk) # retrieve asset by primary key
     file_path = self.get_file_path(asset)   # get full file path

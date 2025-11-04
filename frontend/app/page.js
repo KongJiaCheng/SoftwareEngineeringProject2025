@@ -1,11 +1,11 @@
-"use client";
+// "use client";
 
-import { useState } from "react";
-import { Box, VStack } from "@chakra-ui/layout";
-import { FormControl, FormLabel } from "@chakra-ui/form-control";
-import { Input } from "@chakra-ui/input";
-import { Button } from "@chakra-ui/button";
-import { useToast } from "@chakra-ui/toast";
+// import { useState } from "react";
+// import { Box, VStack } from "@chakra-ui/layout";
+// import { FormControl, FormLabel } from "@chakra-ui/form-control";
+// import { Input } from "@chakra-ui/input";
+// import { Button } from "@chakra-ui/button";
+// import { useToast } from "@chakra-ui/toast";
 
 // export default function LoginPage() {
 //   const [username, setUsername] = useState("");
@@ -103,27 +103,27 @@ import { useToast } from "@chakra-ui/toast";
 //   );
 // }
 
-// added 3/11/2025
-export default async function Home() {
-  const res = await fetch("/api", { cache: "no-store" });
-  const data = await res.json();
+// // // added 3/11/2025
+// // export default async function Home() {
+// //   const res = await fetch("/api", { cache: "no-store" });
+// //   const data = await res.json();
 
-  return (
-    <main style={{ padding: 24, fontFamily: "ui-sans-serif, system-ui" }}>
-      <h1 style={{ fontSize: 28, marginBottom: 8 }}>Pattern B Demo (JS)</h1>
+// //   return (
+// //     <main style={{ padding: 24, fontFamily: "ui-sans-serif, system-ui" }}>
+// //       <h1 style={{ fontSize: 28, marginBottom: 8 }}>Pattern B Demo (JS)</h1>
 
-      <p>
-        Message from Django via Next.js BFF: <b>{data.message}</b>
-      </p>
+// //       <p>
+// //         Message from Django via Next.js BFF: <b>{data.message}</b>
+// //       </p>
 
-      <hr style={{ margin: "16px 0" }} />
+// //       <hr style={{ margin: "16px 0" }} />
 
-      <p>Try the uploader (accepts images/videos/.glb):</p>
-      <form action="/api/upload_download" method="POST" encType="multipart/form-data">
-        <input name="files" type="file" multiple />
-        <button type="submit" style={{ marginLeft: 8 }}>Upload</button>
-      </form>
-    </main>
-  );
-}
-// added 3/11/2025
+// //       <p>Try the uploader (accepts images/videos/.glb):</p>
+// //       <form action="/api/upload_download" method="POST" encType="multipart/form-data">
+// //         <input name="files" type="file" multiple />
+// //         <button type="submit" style={{ marginLeft: 8 }}>Upload</button>
+// //       </form>
+// //     </main>
+// //   );
+// // }
+// // // added 3/11/2025

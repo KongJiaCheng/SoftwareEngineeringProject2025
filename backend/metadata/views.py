@@ -1,9 +1,8 @@
-from django.shortcuts import render
-
-# Create your views here.
-from django.http import JsonResponse
+from rest_framework import viewsets, permissions
 from .models import AssetMetadata
+from .serializers import AssetMetadataSerializer
 
-def metadata_list(request):
-    data = list(AssetMetadata.objects.values())  # get all metadata rows
-    return JsonResponse(data, safe=False)
+class AssetMetadataViewSet(viewsets.ModelViewSet):  # ViewSet for asset metadata
+    queryset = AssetMetadata.objects.all().order_by("-created_at")
+    serializer_class = AssetMetadataSerializer
+    permission_classes = [permissions.AllowAny]

@@ -17,3 +17,10 @@ export async function POST(req) {
   const data = await r.json();
   return NextResponse.json(data, { status: r.status });
 }
+
+export async function GET(req) {
+  const base = process.env.BACKEND_API_BASE;
+  const r = await fetch(`${base}/upload_download/`, {
+    method: "GET",
+  });
+}

@@ -6,7 +6,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "your-secret-key"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
-# AUTH_USER_MODEL = "Users_User"
 
 INSTALLED_APPS = [  # Installed applications
     "django.contrib.admin",
@@ -17,7 +16,6 @@ INSTALLED_APPS = [  # Installed applications
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "assets",
     "metadata",
     "upload_download",
     # "asset_preview"
@@ -49,16 +47,17 @@ DATABASES = {   # Database configuration
 }
 
 # added 3/11/2025
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000"]
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000"]    #for api#
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000"]    #for api#
 # added 3/11/2025
 
 STATIC_URL = "/static/"
 MEDIA_URL = "/media/"   
-# added 3/11/2025
-from pathlib import Path
-BASE_DIR = Path(__file__).resolve().parent.parent
-# added 3/11/2025
+# # added 3/11/2025
+# from pathlib import Path
+# BASE_DIR = Path(__file__).resolve().parent.parent
+# # added 3/11/2025
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 CORS_ALLOW_ALL_ORIGINS = True
