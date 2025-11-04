@@ -1,4 +1,3 @@
 {
-  "/api/upload_download/route": "app/api/upload_download/route.js",
   "/upload/page": "app/upload/page.js"
 }

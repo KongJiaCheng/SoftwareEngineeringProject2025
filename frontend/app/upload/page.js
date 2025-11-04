@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-
+import dynamic from "next/dynamic";
 /**
  * Upload page
  * - Drag & drop or pick files

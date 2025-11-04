@@ -9,7 +9,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("asset_metadata/", include("asset_metadata.urls")),   # handles metadata
 
-    path("api/", include("metadata.api")),        # DRF router for metadata:
+    path("api/", include("asset_metadata.api")),        # DRF router for metadata:
     
     # endpoints (function-based API):
     path("api/upload/", viewsUploadDownload.upload, name="asset_upload"),   
