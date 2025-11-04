@@ -29,7 +29,7 @@ pip install -r requirements.txt
 ```bash
 software
 ```
-#### open pgAdmin4 then right-click "dam_db" database and click restore.
+#### open pgAdmin4 then right-click "dam_system" database and click restore.
 #### enter "dam_project.backup" file path and click backup.
 
 ### migration
