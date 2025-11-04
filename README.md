@@ -21,7 +21,7 @@ pip install -r requirements.txt
 ### Database
 #### install postgre and set password to software.
 
-### create dataabse (do this in terminal)
+### create database (do this in terminal)
 ```bash
 & "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres dam_system
 ```
@@ -29,7 +29,7 @@ pip install -r requirements.txt
 ```bash
 software
 ```
-#### open pgAdmin4 then right-click "dam_db" database and click restore.
+#### open pgAdmin4 then right-click "dam_system" database and click restore.
 #### enter "dam_project.backup" file path and click backup.
 
 ### migration
@@ -41,7 +41,7 @@ python manage.py migrate
 ```bash
 python manage.py runserver
 ```
-### paste this url link in the browser: http://127.0.0.1:8000/admin/assets
+### paste this url link in the browser: http://127.0.0.1:8000/admin/asset_metadata/assetmetadata/
 ## Frontend
 First, run the development server:
 
