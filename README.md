@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 ### create dataabse (do this in terminal)
 ```bash
-& "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres dam_db
+& "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres dam_system
 ```
 ### Password
 ```bash
