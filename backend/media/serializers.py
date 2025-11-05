@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Asset, AssetVersion, Tag
+from asset_metadata.model import Asset, AssetVersion, Tag
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
