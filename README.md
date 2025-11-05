@@ -21,15 +21,15 @@ pip install -r requirements.txt
 ### Database
 #### install postgre and set password to software.
 
-### create dataabse (do this in terminal)
+### create database (do this in terminal)
 ```bash
-& "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres dam_db
+& "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres dam_system
 ```
 ### Password
 ```bash
 software
 ```
-#### open pgAdmin4 then right-click "dam_db" database and click restore.
+#### open pgAdmin4 then right-click "dam_system" database and click restore.
 #### enter "dam_project.backup" file path and click backup.
 
 ### migration
@@ -39,9 +39,19 @@ python manage.py migrate
 ```
 ### start server (use everytime to run backend)
 ```bash
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver
 ```
+### paste this url link in the browser: http://127.0.0.1:8000/admin/asset_metadata/assetmetadata/
 ## Frontend
+
+install dependencies
+```bash
+# got to backend
+cd frontend
+#install dependencies
+npm install react-icons @chakra-ui/react@latest @emotion/react @emotion/styled framer-motion
+```
+
 First, run the development server:
 
 ```bash (used Everytime to run frontend)
