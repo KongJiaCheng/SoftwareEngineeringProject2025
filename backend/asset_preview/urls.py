@@ -1,10 +1,11 @@
+# backend/asset_preview/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
+from .views import AssetPreviewViewSet
 
 router = DefaultRouter()
-router.register(r'assets', views.AssetViewSet)
+router.register(r'assets', AssetPreviewViewSet, basename='asset-preview')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]
