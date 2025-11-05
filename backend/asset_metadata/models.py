@@ -43,7 +43,7 @@ class AssetMetadata(models.Model):
     file_name = models.CharField(max_length=255)
     file_type = models.CharField(max_length=50, blank=True)
     file_size = models.FloatField(null=True, blank=True)   # store in MB
-    file_location = models.CharField(max_length=500, null=True, blank=True)
+    file_location = models.CharField(max_length=500, null=True, blank=True)  # path relative to MEDIA_ROOT("""supposed to not have null or empty, only set true when developing""")
 
     description = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)       # example: ["car", "3d", "black"]

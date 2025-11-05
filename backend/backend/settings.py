@@ -18,7 +18,7 @@ INSTALLED_APPS = [  # Installed applications
     "corsheaders",
     "asset_metadata",
     "upload_download",
-    # "asset_preview"
+    "asset_preview"
     
 ]
 
