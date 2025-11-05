@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const usernameInput = document.createElement("input");
   usernameInput.type = "text";
+  usernameInput.placeholder = "Enter your email";
   usernameInput.style.width = "100%";
   usernameInput.style.marginBottom = "16px";
   usernameInput.style.padding = "8px";
@@ -37,6 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const passwordInput = document.createElement("input");
   passwordInput.type = "password";
+  passwordInput.placeholder = "Enter your password";
   passwordInput.style.width = "100%";
   passwordInput.style.marginBottom = "16px";
   passwordInput.style.padding = "8px";
@@ -95,14 +97,29 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       if (!res.ok) {
-        showToast("Login failed", "red");
+        showToast("Login failed - invalid credentials", "red");
         return;
       }
 
       const data = await res.json();
-      sessionStorage.setItem("access", data.access);
-      showToast("Logged in successfully", "green");
-      window.location.href = "/";
+      
+      if (data.success) {
+        // Store user info (including role)
+        sessionStorage.setItem("user", JSON.stringify(data.user));
+        showToast("Logged in successfully", "green");
+        
+        // Redirect based on role
+        if (data.user.role === 'admin') {
+          window.location.href = "/admin";
+        } else if (data.user.role === 'editor') {
+          window.location.href = "/editor";
+        } else {
+          window.location.href = "/viewer";
+        }
+      } else {
+        showToast(data.error, "red");
+      }
+      
     } catch (err) {
       console.error(err);
       showToast("An error occurred", "red");
