@@ -48,6 +48,7 @@ class AssetMetadata(models.Model):
     description = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)       # example: ["car", "3d", "black"]
 
+    resolution = models.CharField(max_length=20, blank=True, null=True) # for images/videos (1080 x 1920)
     polygon_count = models.IntegerField(null=True, blank=True) # for 3D model
     duration = models.DurationField(null=True, blank=True)  # for videos
     no_of_versions = models.IntegerField(default=1)
