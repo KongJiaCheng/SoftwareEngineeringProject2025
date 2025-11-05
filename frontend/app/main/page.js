@@ -2,204 +2,152 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Box,
-  Input,
-  Button,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  VStack,
-  HStack,
-  Heading,
-  useToast,
-} from "@chakra-ui/react";
 
 export default function MainPage() {
+  const [user, setUser] = useState(null);
   const [metadata, setMetadata] = useState([]);
-  const [search, setSearch] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [description, setDescription] = useState("");
-  const [selected, setSelected] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [newItem, setNewItem] = useState("");
+  const [editIndex, setEditIndex] = useState(null);
   const router = useRouter();
-  const toast = useToast();
 
-  const API_URL = "http://127.0.0.1:8000/api/metadata/";
-
-  // ✅ Load user session
+  // ✅ Load user from localStorage
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user) {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
       router.push("/login");
       return;
     }
-    fetchMetadata();
-  }, []);
+    setUser(JSON.parse(storedUser));
+  }, [router]);
 
-  // ✅ Fetch metadata from Django
-  const fetchMetadata = async () => {
-    try {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      setMetadata(data);
-    } catch (error) {
-      console.error(error);
-      toast({ title: "Failed to load metadata", status: "error" });
-    }
-  };
+  // ✅ Logout
+  function handleLogout() {
+    localStorage.removeItem("user");
+    router.push("/login");
+  }
 
-  // ✅ Add new metadata
-  const addMetadata = async () => {
-    if (!fileName) return toast({ title: "File name required", status: "warning" });
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file_name: fileName, description }),
-      });
-      if (res.ok) {
-        toast({ title: "Metadata added", status: "success" });
-        setFileName("");
-        setDescription("");
-        fetchMetadata();
-      }
-    } catch (error) {
-      toast({ title: "Add failed", status: "error" });
-    }
-  };
-
-  // ✅ Edit metadata
-  const editMetadata = async (id) => {
-    try {
-      const res = await fetch(`${API_URL}${id}/`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file_name: fileName, description }),
-      });
-      if (res.ok) {
-        toast({ title: "Metadata updated", status: "success" });
-        setSelected(null);
-        setFileName("");
-        setDescription("");
-        fetchMetadata();
-      }
-    } catch (error) {
-      toast({ title: "Update failed", status: "error" });
-    }
-  };
+  // ✅ Add metadata
+  function handleAdd() {
+    if (!newItem.trim()) return;
+    setMetadata([...metadata, newItem.trim()]);
+    setNewItem("");
+  }
 
   // ✅ Delete metadata
-  const deleteMetadata = async (id) => {
-    if (!confirm("Delete this record?")) return;
-    try {
-      const res = await fetch(`${API_URL}${id}/`, { method: "DELETE" });
-      if (res.ok) {
-        toast({ title: "Deleted", status: "info" });
-        fetchMetadata();
-      }
-    } catch (error) {
-      toast({ title: "Delete failed", status: "error" });
-    }
-  };
+  function handleDelete(index) {
+    setMetadata(metadata.filter((_, i) => i !== index));
+  }
 
-  // ✅ Filter by search
-  const filtered = metadata.filter(
-    (item) =>
-      item.file_name.toLowerCase().includes(search.toLowerCase()) ||
-      item.tags?.join(",").toLowerCase().includes(search.toLowerCase())
+  // ✅ Edit metadata
+  function handleEdit(index) {
+    setEditIndex(index);
+    setNewItem(metadata[index]);
+  }
+
+  // ✅ Save edited metadata
+  function handleSaveEdit() {
+    const updated = [...metadata];
+    updated[editIndex] = newItem.trim();
+    setMetadata(updated);
+    setEditIndex(null);
+    setNewItem("");
+  }
+
+  // ✅ Filtered search
+  const filteredMetadata = metadata.filter((item) =>
+    item.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  return (
-    <Box p={8} bg="gray.50" minH="100vh">
-      <Heading mb={6}>Metadata Management</Heading>
+  if (!user)
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100 text-lg">
+        Loading...
+      </div>
+    );
 
-      {/* Search + Logout */}
-      <HStack mb={4} spacing={4}>
-        <Input
-          placeholder="Search by name or tag"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          bg="white"
-        />
-        <Button
-          onClick={() => {
-            localStorage.removeItem("user");
-            router.push("/login");
-          }}
-          colorScheme="red"
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="flex justify-between items-center p-4 bg-blue-600 text-white">
+        <h1 className="text-2xl font-bold">Welcome, {user.username}!</h1>
+        <button
+          onClick={handleLogout}
+          className="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-gray-100"
         >
           Logout
-        </Button>
-      </HStack>
+        </button>
+      </header>
 
-      {/* Add/Edit Form */}
-      <VStack bg="white" p={4} mb={6} rounded="md" spacing={3} shadow="sm">
-        <Input
-          placeholder="File Name"
-          value={fileName}
-          onChange={(e) => setFileName(e.target.value)}
-        />
-        <Input
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        {selected ? (
-          <Button colorScheme="blue" onClick={() => editMetadata(selected.id)}>
-            Update Metadata
-          </Button>
-        ) : (
-          <Button colorScheme="green" onClick={addMetadata}>
-            Add Metadata
-          </Button>
-        )}
-      </VStack>
+      {/* Metadata Section */}
+      <main className="p-8 space-y-6">
+        <h2 className="text-xl font-semibold">Metadata Management</h2>
 
-      {/* Metadata Table */}
-      <Table variant="simple" bg="white" rounded="md" shadow="sm">
-        <Thead bg="gray.100">
-          <Tr>
-            <Th>File Name</Th>
-            <Th>Description</Th>
-            <Th>Tags</Th>
-            <Th>Actions</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {filtered.map((item) => (
-            <Tr key={item.id}>
-              <Td>{item.file_name}</Td>
-              <Td>{item.description}</Td>
-              <Td>{item.tags?.join(", ")}</Td>
-              <Td>
-                <HStack spacing={2}>
-                  <Button
-                    size="sm"
-                    colorScheme="yellow"
-                    onClick={() => {
-                      setSelected(item);
-                      setFileName(item.file_name);
-                      setDescription(item.description || "");
-                    }}
+        {/* Search Bar */}
+        <input
+          type="text"
+          placeholder="Search metadata..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="border p-2 rounded-lg w-full"
+        />
+
+        {/* Add/Edit Section */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Enter metadata..."
+            value={newItem}
+            onChange={(e) => setNewItem(e.target.value)}
+            className="border p-2 rounded-lg flex-1"
+          />
+          {editIndex !== null ? (
+            <button
+              onClick={handleSaveEdit}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+            >
+              Save
+            </button>
+          ) : (
+            <button
+              onClick={handleAdd}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            >
+              Add
+            </button>
+          )}
+        </div>
+
+        {/* Metadata List */}
+        <div className="space-y-2">
+          {filteredMetadata.length === 0 ? (
+            <p className="text-gray-500 italic">No metadata found.</p>
+          ) : (
+            filteredMetadata.map((item, index) => (
+              <div
+                key={index}
+                className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border"
+              >
+                <span>{item}</span>
+                <div className="space-x-2">
+                  <button
+                    onClick={() => handleEdit(index)}
+                    className="text-yellow-600 hover:underline"
                   >
                     Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    colorScheme="red"
-                    onClick={() => deleteMetadata(item.id)}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(index)}
+                    className="text-red-600 hover:underline"
                   >
                     Delete
-                  </Button>
-                </HStack>
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
-    </Box>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </main>
+    </div>
   );
 }
