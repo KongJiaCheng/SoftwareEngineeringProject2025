@@ -1,4 +1,4 @@
-// File: B:\degree\miantic\SoftwareEngineeringProject2025\frontend\app\layout.js
+// File: C:\xampp\htdocs\SoftwareEngineeringProject2025\SoftwareEngineeringProject2025\frontend\app\layout.js
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
