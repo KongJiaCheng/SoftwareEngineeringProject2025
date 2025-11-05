@@ -48,8 +48,10 @@ install dependencies
 ```bash
 # got to backend
 cd frontend
+```
+```bash
 #install dependencies
-npm install react-icons @chakra-ui/react@latest @emotion/react @emotion/styled framer-motion
+npm install @chakra-ui/react @chakra-ui/system @emotion/react @emotion/styled framer-motion
 ```
 
 First, run the development server:
