@@ -37,6 +37,8 @@ class AssetMetadata(models.Model):
 from django.db import models
 #from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import User  # to reference "Modified By" user
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.conf import settings
 
 class AssetMetadata(models.Model):
