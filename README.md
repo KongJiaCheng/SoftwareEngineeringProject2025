@@ -51,7 +51,7 @@ cd frontend
 ```
 ```bash
 #install dependencies
-npm install @chakra-ui/react @chakra-ui/system @emotion/react @emotion/styled framer-motion
+npm install @chakra-ui/react @chakra-ui/system @emotion/react @emotion/styled framer-motion bcryptjs
 ```
 
 First, run the development server:
