@@ -37,13 +37,15 @@ class AssetMetadata(models.Model):
 from django.db import models
 #from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import User  # to reference "Modified By" user
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.conf import settings
 
 class AssetMetadata(models.Model):
     file_name = models.CharField(max_length=255)
     file_type = models.CharField(max_length=50, blank=True)
     file_size = models.FloatField(null=True, blank=True)   # store in MB
-    file_location = models.CharField(max_length=500)
+    file_location = models.CharField(max_length=500, null=True, blank=True)  # path relative to MEDIA_ROOT("""supposed to not have null or empty, only set true when developing""")
 
     description = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)       # example: ["car", "3d", "black"]

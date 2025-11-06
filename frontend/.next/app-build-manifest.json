@@ -3,8 +3,8 @@
     "/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/layout.js",
-      "static/css/app/layout.css"
+      "static/css/app/layout.css",
+      "static/chunks/app/layout.js"
     ],
     "/error": [
       "static/chunks/webpack.js",
@@ -16,10 +16,27 @@
       "static/chunks/main-app.js",
       "static/chunks/app/not-found.js"
     ],
-    "/upload/page": [
+    "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/upload/page.js"
+      "static/chunks/app/login/page.js"
+    ],
+<<<<<<< HEAD
+    "/api/login/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/login/route.js"
+    ],
+    "/main/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/main/page.js"
+=======
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
+>>>>>>> main
     ]
   }
 }

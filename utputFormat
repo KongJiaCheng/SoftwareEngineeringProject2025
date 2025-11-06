@@ -1,0 +1,13 @@
+HTTP/1.1 403 Forbidden
+Date: Wed, 05 Nov 2025 05:18:43 GMT
+Server: WSGIServer/0.2 CPython/3.13.7
+Content-Type: application/json
+Vary: Accept, Cookie, origin
+Allow: GET, POST, HEAD, OPTIONS
+X-Frame-Options: DENY
+Content-Length: 58
+X-Content-Type-Options: nosniff
+Referrer-Policy: same-origin
+Cross-Origin-Opener-Policy: same-origin
+
+{"detail":"Authentication credentials were not provided."}
