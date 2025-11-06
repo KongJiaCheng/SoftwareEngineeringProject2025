@@ -1,6 +1,23 @@
+# ========================
+# Node / Next.js
+# ========================
 node_modules/
 .next/
-dist/
-*.log
-.env
+dist/ *.log
+
+# Python / Django
+__pycache__/
+
+# Ignore all migration files but keep __init__.py
+**/migrations/
+!**/migrations/__init__.py
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+
+
+
 
