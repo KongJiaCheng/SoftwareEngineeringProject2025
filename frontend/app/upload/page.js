@@ -5,8 +5,7 @@ import dynamic from "next/dynamic";
 /**
  * Upload page
  * - Drag & drop or pick files
- * - Sends multipart/form-data with field name "files"
- * - Uses XHR to report per-file upload progress
+ * - Use XHR to report per-file upload progress
  * - POST /api/upload_download/  (Next proxy -> Django /api/upload/)
  * - Renders results from Django response (e.g., { uploaded: [...] })
  */
