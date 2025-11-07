@@ -9,11 +9,10 @@ from rest_framework.response import Response
 from asset_metadata.models import AssetMetadata
 from .serializers import AssetSerializer
 from rest_framework.decorators import api_view
-# add import at top
 from rest_framework.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from PIL import Image
-# from moviepy.editor import VideoFileClip
+
 
 
   
