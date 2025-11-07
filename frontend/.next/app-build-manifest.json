@@ -16,15 +16,37 @@
       "static/chunks/main-app.js",
       "static/chunks/app/not-found.js"
     ],
+<<<<<<< HEAD
+=======
+    "/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/login/page.js"
+    ],
+<<<<<<< HEAD
+    "/api/login/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/login/route.js"
+    ],
+>>>>>>> ff5731f065c5459c17b02a3e72a809130491ffcb
     "/main/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/main/page.js"
+<<<<<<< HEAD
     ],
+=======
+=======
+>>>>>>> ff5731f065c5459c17b02a3e72a809130491ffcb
     "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/_not-found/page.js"
+<<<<<<< HEAD
+=======
+>>>>>>> main
+>>>>>>> ff5731f065c5459c17b02a3e72a809130491ffcb
     ]
   }
 }
