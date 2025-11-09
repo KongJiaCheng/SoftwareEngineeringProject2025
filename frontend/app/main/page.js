@@ -1,11 +1,11 @@
 'use client';
-import * as React from 'react';
+import React, { useEffect } from 'react';
 
 /**
- * Main 3D CMS page – loads the plain-JS CMS on the client only.
+ * Main 3D CMS page – integrates Upload feature with cms.js
  */
 export default function MainPage() {
-  React.useEffect(() => {
+  useEffect(() => {
     import('@/public/js/cms.js')
       .then((mod) => {
         if (mod?.initCMS) mod.initCMS();
@@ -16,7 +16,7 @@ export default function MainPage() {
 
   return (
     <main style={{ padding: '20px', textAlign: 'center' }}>
-      <h2 style={{ color: '#aeb8ff' }}>Loading 3D CMS — Plain JS…</h2>
+      <h2 style={{ color: '#aeb8ff' }}>Loading 3D CMS — with Upload</h2>
     </main>
   );
 }

@@ -1,12 +1,4 @@
-<<<<<<< HEAD
 // File: C:\Users\DELL\Desktop\RobotAliceSkull\INTI\Degree\Software Engineering\SoftwareEngineeringProject2025\frontend\app\layout.js
-=======
-<<<<<<< HEAD
-// File: C:\Users\DELL\Desktop\RobotAliceSkull\INTI\Degree\Software Engineering\SoftwareEngineeringProject2025\frontend\app\layout.js
-=======
-// File: C:\xampp\htdocs\SoftwareEngineeringProject2025\SoftwareEngineeringProject2025\frontend\app\layout.js
->>>>>>> main
->>>>>>> ff5731f065c5459c17b02a3e72a809130491ffcb
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -1,13 +1,4 @@
 {
-<<<<<<< HEAD
-  "/main/page": "app/main/page.js"
-=======
-<<<<<<< HEAD
-  "/login/page": "app/login/page.js",
-  "/main/page": "app/main/page.js"
-=======
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/_not-found/page": "app/_not-found/page.js"
->>>>>>> main
->>>>>>> ff5731f065c5459c17b02a3e72a809130491ffcb
+  "/main/page": "app/main/page.js"
 }
