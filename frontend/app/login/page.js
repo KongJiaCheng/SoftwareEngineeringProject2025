@@ -1,111 +1,107 @@
-"use strict";
+"use client";
 
-document.addEventListener("DOMContentLoaded", function () {
-  // Create elements
-  const container = document.createElement("div");
-  container.style.backgroundImage = 'url("/picture/Background.jpg")';
-  container.style.backgroundSize = "cover";
-  container.style.minHeight = "100vh";
-  container.style.display = "flex";
-  container.style.alignItems = "center";
-  container.style.justifyContent = "center";
-  container.style.color = "white";
+import { useState } from "react";
+import { Box, VStack } from "@chakra-ui/layout";
+import { FormControl, FormLabel } from "@chakra-ui/form-control";
+import { Input } from "@chakra-ui/input";
+import { Button } from "@chakra-ui/button";
+import { useToast } from "@chakra-ui/toast";
+import { useRouter } from "next/navigation";
 
-  const box = document.createElement("div");
-  box.style.background = "rgba(0,0,0,0.7)";
-  box.style.padding = "32px";
-  box.style.borderRadius = "8px";
-  box.style.width = "400px";
+export default function LoginPage() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const toast = useToast();
+  const router = useRouter();
 
-  // Username field
-  const usernameLabel = document.createElement("label");
-  usernameLabel.textContent = "Username";
-  usernameLabel.style.display = "block";
-  usernameLabel.style.marginBottom = "8px";
-
-  const usernameInput = document.createElement("input");
-  usernameInput.type = "text";
-  usernameInput.style.width = "100%";
-  usernameInput.style.marginBottom = "16px";
-  usernameInput.style.padding = "8px";
-
-  // Password field
-  const passwordLabel = document.createElement("label");
-  passwordLabel.textContent = "Password";
-  passwordLabel.style.display = "block";
-  passwordLabel.style.marginBottom = "8px";
-
-  const passwordInput = document.createElement("input");
-  passwordInput.type = "password";
-  passwordInput.style.width = "100%";
-  passwordInput.style.marginBottom = "16px";
-  passwordInput.style.padding = "8px";
-
-  // Login button
-  const loginButton = document.createElement("button");
-  loginButton.textContent = "Login";
-  loginButton.style.width = "100%";
-  loginButton.style.padding = "10px";
-  loginButton.style.backgroundColor = "green";
-  loginButton.style.color = "white";
-  loginButton.style.border = "none";
-  loginButton.style.cursor = "pointer";
-
-  // Append elements
-  box.appendChild(usernameLabel);
-  box.appendChild(usernameInput);
-  box.appendChild(passwordLabel);
-  box.appendChild(passwordInput);
-  box.appendChild(loginButton);
-  container.appendChild(box);
-  document.body.appendChild(container);
-
-  // Toast message function
-  function showToast(message, color = "orange") {
-    const toast = document.createElement("div");
-    toast.textContent = message;
-    toast.style.position = "fixed";
-    toast.style.bottom = "20px";
-    toast.style.left = "50%";
-    toast.style.transform = "translateX(-50%)";
-    toast.style.background = color;
-    toast.style.color = "white";
-    toast.style.padding = "10px 20px";
-    toast.style.borderRadius = "6px";
-    toast.style.zIndex = "9999";
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-  }
-
-  // Handle login
-  loginButton.addEventListener("click", async function () {
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value.trim();
-
+  const handleLogin = async () => {
     if (!username || !password) {
-      showToast("Please fill in all fields", "orange");
+      toast({ title: "Please fill all fields", status: "warning" });
       return;
     }
 
     try {
-      const res = await fetch("/api/auth/token/", {
+      const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        showToast("Login failed", "red");
+        toast({
+          title: data.error || "Login failed",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
         return;
       }
 
-      const data = await res.json();
-      sessionStorage.setItem("access", data.access);
-      showToast("Logged in successfully", "green");
-      window.location.href = "/";
-    } catch (err) {
-      console.error(err);
-      showToast("An error occurred", "red");
+      // ✅ Store user info in localStorage
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      toast({
+        title: "Login successful",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+
+      // ✅ Redirect to /main
+      setTimeout(() => {
+        router.push("/main");
+      }, 1500);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "An error occurred. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
     }
-  });
-});
+  };
+
+  return (
+    <Box
+      bgImage='url("/picture/Background.jpg")'
+      bgSize="cover"
+      minH="100vh"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      color="white"
+    >
+      <Box bg="rgba(0,0,0,0.7)" p={8} borderRadius="md" width="400px">
+        <VStack gap={4}>
+          <FormControl>
+            <FormLabel>Username</FormLabel>
+            <Input
+              bg="white"
+              color="black"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Password</FormLabel>
+            <Input
+              bg="white"
+              color="black"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </FormControl>
+
+          <Button colorScheme="green" width="100%" onClick={handleLogin}>
+            Login
+          </Button>
+        </VStack>
+      </Box>
+    </Box>
+  );
+}

@@ -1,4 +1,4 @@
-// A simple wrapper around fetch to call our backend API.
+// A simple wrapper around fetch to calll our backend API.(like a bridge)
 export async function api(path, init = {}) {
   const res = await fetch(`/api/backend/${path.replace(/^\/+/, "")}`, {
     cache: "no-store",
