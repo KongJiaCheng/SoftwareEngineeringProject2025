@@ -59,7 +59,7 @@ DATABASES = {   # Database configuration
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "dam_system",
         "USER": "postgres",
-        "PASSWORD": "software",
+        "PASSWORD": "Password",
         "HOST": "localhost",
         "PORT": "5432",
     }
@@ -74,7 +74,9 @@ CSRF_TRUSTED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000"]    #for
 STATIC_URL = "/static/"
 MEDIA_URL = "/media/"   
 
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_ROOT = r"C:\media"    # This leads to c drive media folder
+
+
 
 CORS_ALLOW_ALL_ORIGINS = True
 
