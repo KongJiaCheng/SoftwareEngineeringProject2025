@@ -59,7 +59,7 @@ DATABASES = {   # Database configuration
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "dam_system",
         "USER": "postgres",
-        "PASSWORD": "software",
+        "PASSWORD": "Password",
         "HOST": "localhost",
         "PORT": "5432",
     }
