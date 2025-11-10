@@ -23,21 +23,35 @@ export async function POST(req) {
   }
 }
 
-export async function GET() {
-  try {
-    const r = await fetch(`${getBase()}/upload/`, { method: "GET" });
-    const data = await r.json().catch(() => ({}));
-    return NextResponse.json(data, { status: r.status });
-  } catch (e) {
-    return NextResponse.json({ detail: String(e) }, { status: 500 });
+export async function GET(req) {
+  const url = new URL(req.url);
+  const isDownload = url.searchParams.has("download");
+  const id = url.searchParams.get("id");
+
+  if (isDownload) {
+    if (!id) return NextResponse.json({ detail: "Missing id" }, { status: 400 });
+
+    const r = await fetch(`${getBase()}/upload_download/${id}/download/`);
+    if (!r.ok && r.headers.get("content-type")?.includes("application/json")) {
+      const data = await r.json().catch(() => ({}));
+      return NextResponse.json(data, { status: r.status });
+    }
+    return new Response(r.body, {
+      status: r.status,
+      headers: {
+        "Content-Type": r.headers.get("content-type") || "application/octet-stream",
+        "Content-Disposition": r.headers.get("content-disposition") || "attachment",
+        "Content-Length": r.headers.get("content-length") || "",
+      },
+    });
   }
+
+  // original JSON GET behavior
+  const r = await fetch(`${getBase()}/upload/`, { method: "GET" });
+  const data = await r.json().catch(() => ({}));
+  return NextResponse.json(data, { status: r.status });
 }
 
-/**
- * Save edited metadata.
- * Call as:  fetch('/api/upload_download?id=123', { method:'PATCH', body:JSON.stringify({...}), headers:{'Content-Type':'application/json'} })
- * This proxies to Django:  PATCH {BACKEND_API_BASE}/upload_download/123/
- */
 export async function PATCH(_req, { params }) {
   const base = process.env.BACKEND_API_BASE;
   const body = await _req.text();
@@ -49,3 +63,4 @@ export async function PATCH(_req, { params }) {
   const data = await r.json().catch(() => ({}));
   return NextResponse.json(data, { status: r.status });
 }
+

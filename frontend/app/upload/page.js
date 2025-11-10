@@ -21,6 +21,7 @@ export default function UploadPage() {
 
   const inputRef = useRef(null);
   const dropRef = useRef(null);
+  
 
   // ---------- Helpers ----------
   function updateProgress(filename, pct) {
@@ -550,9 +551,36 @@ export default function UploadPage() {
 
   // ---------- Main ----------
   return h(
-    "main",
-    { style: { maxWidth: 900, margin: "24px auto", padding: "0 16px", color: "#e5e7eb" } },
-    h("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 8 } }, "Upload files"),
+  "main",
+  { style: { maxWidth: 900, margin: "24px auto", padding: "0 16px", color: "#e5e7eb" } },
+
+  // === ⬆️ Add navigation button to main page ===
+  h(
+    "div",
+    { style: { display: "flex", justifyContent: "flex-start", marginBottom: 16 } },
+    h(
+      "button",
+      {
+        type: "button",
+        onClick: () => (window.location.href = "/main"), // navigate to main page
+        style: {
+          padding: "10px 16px",
+          borderRadius: 8,
+          border: "1px solid #4f46e5",
+          background: "#4f46e5",
+          color: "#fff",
+          cursor: "pointer",
+          fontWeight: 600,
+        },
+      },
+      "Back To Main Page"
+    )
+  ),
+
+
+  // === Existing content ===
+  h("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 8 } }, "Upload files"),
+
     h("p", { style: { margin: 0, opacity: 0.8 } }, "Pick files, edit metadata, then press Save on each card to create them."),
 
     // hidden input
