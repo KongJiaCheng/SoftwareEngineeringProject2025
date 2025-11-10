@@ -24,6 +24,31 @@ export function initCMS() {
       document.head.appendChild(style);
     };
 
+    // Download helper
+    async function downloadAsset(asset) {
+      try {
+        const res = await fetch(`/api/upload_download?id=${asset.id}&download=1`);
+        if (!res.ok) {
+          let detail = `HTTP ${res.status}`;
+          try { const j = await res.json(); if (j?.detail) detail = j.detail; } catch {}
+          throw new Error(detail);
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = asset.name || asset.file_name || 'download';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        alert(`Downloaded "${asset.name}" to your default Downloads folder.`);
+      } catch (e) {
+        alert(`Download failed: ${e.message}`);
+      }
+    }
+
+
     // === Styles ===
     injectCSS(`
       body { margin:0; font-family:Inter, sans-serif; background:#0b0e1b; color:#e9ecff; }
@@ -194,7 +219,7 @@ export function initCMS() {
           el('button', { class: 'btn' }, ['Edit']),
           el('button', { class: 'btn' }, ['Delete']),
         ]),
-        el('button', { class: 'btn', onclick: () => window.location.href = `/api/upload_download/${asset.id}/download` }, ['Download'])
+        el('button', { class: 'btn', onclick: () => downloadAsset(data) }, ['Download'])
       );
 
       return el('div', { class: 'cms-card' }, cardChildren);

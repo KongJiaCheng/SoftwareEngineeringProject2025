@@ -169,9 +169,9 @@ def upload(request):
 @api_view(["PATCH"])
 @authentication_classes([]) # dev-open
 @permission_classes([AllowAny]) # dev-open
-def update_asset(request, pk: int):
+def update_asset(request, pk: int): # partial update of metadata
     try:
-        asset = AssetMetadata.objects.get(pk=pk)
+        asset = AssetMetadata.objects.get(pk=pk)    # get existing
     except AssetMetadata.DoesNotExist:
         return Response({"detail": "Not found."}, status=404)
 
@@ -207,7 +207,7 @@ def update_asset(request, pk: int):
                 data["polygon_count"] = None  # or raise ValidationError
 
     # Allow the fields you actually want editable
-    allowed_keys = {"file_name", "description", "tags", "resolution", "polygon_count", "duration"}
+    allowed_keys = {"file_name", "description", "tags"}
     clean = {k: v for k, v in data.items() if k in allowed_keys}
 
     ser = AssetSerializer(asset, data=clean, partial=True)
@@ -224,19 +224,14 @@ def update_asset(request, pk: int):
 @authentication_classes([])      # dev-open
 @permission_classes([AllowAny])  # dev-open
 def download(request, pk):
-    """
-    Simple file download by id (uses file_location).
-    """
-    try:
-        asset = AssetMetadata.objects.get(pk=pk)
-    except AssetMetadata.DoesNotExist:
-        raise Http404("Asset not found")
+    from django.shortcuts import get_object_or_404
+    asset = get_object_or_404(AssetMetadata, pk=pk)
 
-    rel_path = asset.file_location or ""
-    if not rel_path:
-        raise Http404("No file path stored")
+    rel_path = asset.file_location or ""    # relative path in MEDIA_ROOT
+    full_path = os.path.join(settings.MEDIA_ROOT, rel_path.replace("/", os.sep))    # full path
+    if not os.path.exists(full_path):   # file missing
+        raise Http404("File not found on server")
 
-    file_path = os.path.join(settings.MEDIA_ROOT, rel_path.replace("/", os.sep))
-    if not os.path.exists(file_path):
-        raise Http404("File not found on disk")
-    return FileResponse(open(file_path, "rb"), as_attachment=True, filename=asset.file_name)
+    # browser will save to default downloads folder
+    return FileResponse(open(full_path, "rb"), as_attachment=True, filename=asset.file_name)
+

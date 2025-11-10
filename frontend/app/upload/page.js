@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 export default function UploadPage() {
   const h = React.createElement;
 
-  // ---------- State ----------
+  // State
   const [files, setFiles] = useState([]);               // File objects chosen (not yet saved)
   const [error, setError] = useState("");
   const [progressMap, setProgressMap] = useState({});   // filename -> %
@@ -40,7 +40,7 @@ export default function UploadPage() {
   }
   
 
-  // ---------- Helpers ----------
+  // Helpers
   function updateProgress(filename, pct) {
     setProgressMap((prev) => ({ ...prev, [filename]: pct }));
   }
@@ -163,7 +163,7 @@ export default function UploadPage() {
     });
   }
 
-  // ---------- Pick & DnD ----------
+  // Pick & DnD
   const onPick = useCallback((e) => {
     const picked = Array.from(e.target.files || []);
     if (!picked.length) return;
@@ -365,7 +365,7 @@ export default function UploadPage() {
       });
   }
 
-  // ---------- UI (no JSX) ----------
+  // UI
   function renderDropZone() {
     const styles = {
       border: "2px dashed #888",
@@ -597,12 +597,11 @@ export default function UploadPage() {
     );
   }
 
-  // ---------- Main ----------
+  // Main
   return h(
   "main",
   { style: { maxWidth: 900, margin: "24px auto", padding: "0 16px", color: "#e5e7eb" } },
 
-  // === ⬆️ Add navigation button to main page ===
   h(
     "div",
     { style: { display: "flex", justifyContent: "flex-start", marginBottom: 16 } },
@@ -626,7 +625,7 @@ export default function UploadPage() {
   ),
 
 
-  // === Existing content ===
+  // Existing content
   h("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 8 } }, "Upload files"),
 
     h("p", { style: { margin: 0, opacity: 0.8 } }, "Pick files, edit metadata, then press Save on each card to create them."),
@@ -655,7 +654,7 @@ export default function UploadPage() {
   );
 }
 
-// --------- tiny helpers
+// tiny helpers
 function btnStyle(enabled) {
   return {
     padding: "10px 14px",
