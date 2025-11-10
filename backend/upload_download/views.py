@@ -24,17 +24,11 @@ def _img_resolution(full_path: str):
 
 
 def _to_timedelta(value):
-    """
-    Accepts:
-      - "HH:MM:SS" or "MM:SS" (string)
-      - seconds as int/float or numeric string
-    Returns timedelta or None.
-    """
-    if value is None or value == "":
+    if value is None or value == "": # blank
         return None
-    if isinstance(value, (int, float)):
+    if isinstance(value, (int, float)): # numeric
         return timedelta(seconds=float(value))
-    if isinstance(value, str):
+    if isinstance(value, str):  # string
         s = value.strip()
         # numeric string?
         try:
@@ -48,22 +42,22 @@ def _to_timedelta(value):
         except ValueError:
             return None
         if len(parts) == 3:
-            h, m, sec = parts
+            h, m, sec = parts   # HH, MM, SS
         elif len(parts) == 2:
             h, m, sec = 0, parts[0], parts[1]
         else:
             return None
-        return timedelta(hours=h, minutes=m, seconds=sec)
+        return timedelta(hours=h, minutes=m, seconds=sec)   # return timedelta
     return None
 
 
 def _payload(a: AssetMetadata):
-    # Only fields that exist in YOUR model
+    # Only fields that exist in the model
     return {
         "id": a.id,
         "file_name": a.file_name,
         "file_type": a.file_type or "",
-        "file_size": a.file_size,                     # MB
+        "file_size": a.file_size,                     
         "file_location": a.file_location or "",
         "description": a.description or "",
         "tags": a.tags or [],
@@ -77,7 +71,7 @@ def _payload(a: AssetMetadata):
     }
 
 
-@api_view(["POST"])
+@api_view(["POST"]) # upload
 @authentication_classes([])      # dev-open
 @permission_classes([AllowAny])  # dev-open
 def upload(request):
@@ -85,7 +79,7 @@ def upload(request):
     if not upfile:
         return Response({"detail": "No file. Send single file in field 'file'."}, status=400)
 
-    # ---- side fields
+    # side fields
     file_name = request.POST.get("file_name") or upfile.name
     description = (request.POST.get("description") or "").strip()
     tags_raw = request.POST.get("tags", "")
@@ -124,6 +118,18 @@ def upload(request):
         subdir = "model"
     else:
         subdir = "other"
+
+    # HARD CHECK: only images, videos, or .glb
+    lower_name = file_name.lower()
+    is_image = ctype.startswith("image/")
+    is_video = ctype.startswith("video/")
+    is_glb = lower_name.endswith((".glb"))
+
+    if not (is_image or is_video or is_glb):
+        return Response(
+            {"detail": "Unsupported file type. Only images, videos, .glb are allowed."},
+            status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        )
 
     # save only once to MEDIA_ROOT/<subdir>
     target_dir = os.path.join(settings.MEDIA_ROOT, subdir)

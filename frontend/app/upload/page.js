@@ -21,6 +21,23 @@ export default function UploadPage() {
 
   const inputRef = useRef(null);
   const dropRef = useRef(null);
+
+  const ALLOWED_MIME_PREFIX = ["image/", "video/"];
+  const ALLOWED_EXT = [".glb",];
+
+  function fileExt(name = "") {
+    const i = name.lastIndexOf(".");
+    return i >= 0 ? name.slice(i).toLowerCase() : "";
+  }
+
+  function isAllowedFile(f) {
+    const t = String(f.type || "").toLowerCase();
+    const ext = fileExt(f.name);
+    if (ALLOWED_MIME_PREFIX.some(p => t.startsWith(p))) return true;           // image/* or video/*
+    if (ALLOWED_MIME_EXACT.includes(t)) return true;                            // proper glTF mimes
+    if (ALLOWED_EXT.includes(ext)) return true;                                 // .glb / .gltf (even if type is octet-stream)
+    return false;
+  }
   
 
   // ---------- Helpers ----------
@@ -148,52 +165,75 @@ export default function UploadPage() {
 
   // ---------- Pick & DnD ----------
   const onPick = useCallback((e) => {
-    const list = Array.from(e.target.files || []);
-    if (!list.length) return;
+    const picked = Array.from(e.target.files || []);
+    if (!picked.length) return;
+
+    const valid = picked.filter(isAllowedFile);
+    const rejected = picked.filter(f => !isAllowedFile(f));
+
+    if (rejected.length) {
+      alert(
+        "The following files were rejected (only images, videos, .glb, .gltf allowed):\n\n" +
+        rejected.map(f => "• " + f.name).join("\n")
+      );
+    }
+    if (!valid.length) {
+      // clear everything if nothing valid
+      setFiles([]); setLocalEdits({}); setProgressMap({}); setSaveBusy({});
+      setSaveOK({}); setPredictedInfo({}); setSavedInfo({}); setError("");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
 
     // reset UI state
-    setError("");
-    setProgressMap({});
-    setSaveBusy({});
-    setSaveOK({});
-    setPredictedInfo({});
-    setSavedInfo({});
+    setError(""); setProgressMap({}); setSaveBusy({}); setSaveOK({});
+    setPredictedInfo({}); setSavedInfo({});
 
-    // store files, predict, and probe
-    setFiles(list);
-    predictForPickedFiles(list);
-    probeMediaMeta(list);
+    // store valid files only
+    setFiles(valid);
+    predictForPickedFiles(valid);
+    probeMediaMeta(valid);
 
-    // init local edits
     const init = {};
-    list.forEach((f) => (init[f.name] = primedFrom(f)));
+    valid.forEach((f) => (init[f.name] = primedFrom(f)));
     setLocalEdits(init);
   }, [resProbe, vidDur]);
 
   const onDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const list = Array.from(e.dataTransfer?.files || []);
-    if (!list.length) return;
+    e.preventDefault(); e.stopPropagation();
+    const dropped = Array.from(e.dataTransfer?.files || []);
+    if (!dropped.length) return;
+
+    const valid = dropped.filter(isAllowedFile);
+    const rejected = dropped.filter(f => !isAllowedFile(f));
+
+    if (rejected.length) {
+      alert(
+        "The following files were rejected (only images, videos, .glb, .gltf allowed):\n\n" +
+        rejected.map(f => "• " + f.name).join("\n")
+      );
+    }
+    if (!valid.length) {
+      // clear everything if nothing valid
+      setFiles([]); setLocalEdits({}); setProgressMap({}); setSaveBusy({});
+      setSaveOK({}); setPredictedInfo({}); setSavedInfo({}); setError("");
+      return;
+    }
 
     // reset UI state
-    setError("");
-    setProgressMap({});
-    setSaveBusy({});
-    setSaveOK({});
-    setPredictedInfo({});
-    setSavedInfo({});
+    setError(""); setProgressMap({}); setSaveBusy({}); setSaveOK({});
+    setPredictedInfo({}); setSavedInfo({});
 
-    // store files, predict, and probe
-    setFiles(list);
-    predictForPickedFiles(list);
-    probeMediaMeta(list);
+    // store valid files only
+    setFiles(valid);
+    predictForPickedFiles(valid);
+    probeMediaMeta(valid);
 
-    // init local edits
     const init = {};
-    list.forEach((f) => (init[f.name] = primedFrom(f)));
+    valid.forEach((f) => (init[f.name] = primedFrom(f)));
     setLocalEdits(init);
   }, [resProbe, vidDur]);
+
 
   const onDragOver = useCallback((e) => {
     e.preventDefault();
@@ -232,13 +272,21 @@ export default function UploadPage() {
     });
   }, [resProbe, vidDur, files]);
 
-  // ---------- Per-file Save ----------
+  // Per-file Save
   async function saveOneNew(file) {
     const key = file.name;
     const meta = localEdits[key] || {};
 
     // Require a file name
     const finalName = (meta.file_name || "").trim() || file.name;
+    
+    // Validate file type
+    async function saveOneNew(file) {
+      if (!isAllowedFile(file)) {
+        alert("Unsupported file type. Only images, videos, .glb, or .gltf are allowed.");
+        throw new Error("Unsupported file type");
+      }
+    }
 
     const form = new FormData();
     // NOTE: keeping field name "file" to match your existing backend handler for this endpoint.
@@ -484,13 +532,13 @@ export default function UploadPage() {
           ),
           h(
             "div",
-            { style: { marginTop: 12, display: "flex", gap: 8, alignItems: "center" } },
+            { style: { marginTop: 12, display: "flex", gap: 8, alignItems: "center" } },  // buttons row
             h(
-              "button",
+              "button", // Save button
               { type: "button", onClick: () => saveOneNew(f), disabled: !!saveBusy[f.name], style: btnPrimaryStyle(!saveBusy[f.name]) },
               saveBusy[f.name] ? "Saving…" : "Save"
             ),
-            saveOK[f.name] ? h("span", { style: { color: "#22c55e" } }, "Saved ✓") : null,
+            saveOK[f.name] ? h("span", { style: { color: "#22c55e" } }, "Saved ✓", (setTimeout(() => (window.location.href = "/main"), 1000))) : null,
             h("span", { style: { marginLeft: "auto", fontVariantNumeric: "tabular-nums" } }, (progressMap[f.name] || 0) + "%")
           )
         );
@@ -589,6 +637,7 @@ export default function UploadPage() {
       type: "file",
       multiple: true,
       style: { display: "none" },
+      accept: "image/*,video/*,.glb",
       onChange: onPick,
     }),
 
