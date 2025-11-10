@@ -1,26 +1,50 @@
+import { NextResponse } from 'next/server';
+import { writeFile, mkdir } from 'fs/promises';
+import fs from 'fs';
+import path from 'path';
 
-
-import { NextResponse } from "next/server";
-
-export const runtime = "nodejs"; // ensure Node runtime for form-data streaming
-
+// Accepts image or 3D asset uploads (JPG, PNG, GLB, OBJ, FBX, ZIP)
 export async function POST(req) {
-  const formData = await req.formData(); // carries "files" from the browser
-  const base = process.env.BACKEND_API_BASE;
+  try {
+    const formData = await req.formData();
+    const file = formData.get('file') || formData.get('files');
 
-  const r = await fetch(`${base}/upload_download/`, {
-    method: "POST",
-    body: formData,
-    // Important: do NOT set Content-Type; the boundary is set automatically
-  });
+    if (!file) {
+      console.error('❌ No file found in request');
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
 
-  const data = await r.json();
-  return NextResponse.json(data, { status: r.status });
-}
+    // Derive extension to route files to proper subfolders
+    const ext = path.extname(file.name).toLowerCase();
+    const is3D = ['.glb', '.gltf', '.obj', '.fbx', '.zip'].includes(ext);
 
-export async function GET(req) {
-  const base = process.env.BACKEND_API_BASE;
-  const r = await fetch(`${base}/upload_download/`, {
-    method: "GET",
-  });
+    // Base upload directory
+    const uploadDir = path.join(
+      process.cwd(),
+      'public',
+      'uploads',
+      is3D ? '3d' : 'images'
+    );
+
+    // Create the folder if missing
+    if (!fs.existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
+    }
+
+    // Write file buffer
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const filePath = path.join(uploadDir, file.name);
+    await writeFile(filePath, buffer);
+
+    console.log(`✅ Uploaded ${is3D ? '3D asset' : 'image'}:`, file.name);
+
+    return NextResponse.json({
+      ok: true,
+      type: is3D ? '3d' : 'image',
+      path: `/uploads/${is3D ? '3d' : 'images'}/${file.name}`,
+    });
+  } catch (err) {
+    console.error('❌ Upload failed:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

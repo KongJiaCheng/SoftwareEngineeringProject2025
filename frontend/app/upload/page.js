@@ -15,6 +15,7 @@ export default function UploadPage() {
 
   const [files, setFiles] = useState([]);
   const [results, setResults] = useState(null);
+  const [assets, setAssets] = useState([]);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [progressMap, setProgressMap] = useState({}); // filename -> %
@@ -77,6 +78,21 @@ export default function UploadPage() {
     };
   }, [onDragOver, onDrop]);
 
+  // ✅ Fetch existing uploaded assets on page load
+useEffect(() => {
+  async function fetchAssets() {
+    try {
+      const res = await fetch("/api/upload_download/");
+      const data = await res.json();
+      if (data.uploaded) setAssets(data.uploaded);
+    } catch (err) {
+      console.error("Failed to fetch assets:", err);
+    }
+  }
+
+  fetchAssets();
+}, []);
+
   // --- Upload logic (XHR for progress) ------------------------------------
 
   async function uploadAll(e) {
@@ -97,8 +113,8 @@ export default function UploadPage() {
     });
 
     try {
-      const data = await xhrUpload("/api/upload_download/", form, updateProgress);
-      setResults(data || null);
+ const data = await xhrUpload("/api/upload_download/", form, updateProgress);
+setResults(data || null);
     } catch (err) {
       setError(String(err && err.message ? err.message : err));
     } finally {
@@ -288,27 +304,51 @@ export default function UploadPage() {
     );
   }
 
-  function renderResults() {
-    if (!results) return null;
-    return h(
-      "div",
-      { style: { marginTop: 20 } },
-      h("div", { style: { fontWeight: 600, marginBottom: 8 } }, "Server response"),
-      h(
-        "pre",
-        {
-          style: {
-            overflowX: "auto",
-            padding: 12,
-            background: "#0b1020",
-            color: "#e6edf3",
-            borderRadius: 8,
-          },
-        },
-        safeJson(results)
-      )
-    );
-  }
+  function renderAssets() {
+  if (!assets.length) return null;
+
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-6 mt-6">
+      {assets.map((file, i) => (
+        <div
+          key={i}
+          className="bg-[#111827] text-white rounded-2xl p-5 shadow-md flex flex-col justify-between"
+        >
+          <div>
+            <div className="text-xs text-gray-400">
+              {file.extension?.toUpperCase() || "FILE"}
+            </div>
+            <div className="text-lg font-semibold mt-1">{file.name}</div>
+            <div className="text-sm text-gray-400 mt-1">{humanSize(file.size)}</div>
+
+            <div className="flex gap-2 mt-3">
+              <span className="bg-slate-800 rounded-md px-2 py-0.5 text-xs">3d</span>
+              <span className="bg-slate-800 rounded-md px-2 py-0.5 text-xs">asset</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 mt-4">
+            <div className="flex gap-2">
+              <button className="px-3 py-1 rounded-md bg-gray-700 hover:bg-gray-600 text-sm">
+                Edit
+              </button>
+              <button className="px-3 py-1 rounded-md bg-red-600 hover:bg-red-500 text-sm">
+                Delete
+              </button>
+            </div>
+            <button
+              className="bg-indigo-500 hover:bg-indigo-600 w-full py-2 rounded-md text-sm font-medium"
+              onClick={() => window.open(file.url, "_blank")}
+            >
+              Download
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 
   // --- Main container ------------------------------------------------------
 
