@@ -16,6 +16,7 @@
       "static/chunks/main-app.js",
       "static/chunks/app/not-found.js"
     ],
+<<<<<<< HEAD
     "/edit/[id]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -25,6 +26,12 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/main/page.js"
+=======
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
+>>>>>>> origin/main
     ],
     "/login/page": [
       "static/chunks/webpack.js",
@@ -36,10 +43,19 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/auth/token/route.js"
     ],
+<<<<<<< HEAD
+=======
+    "/main/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/main/page.js"
+    ],
+>>>>>>> origin/main
     "/api/asset_preview/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/asset_preview/route.js"
+<<<<<<< HEAD
     ],
     "/upload/page": [
       "static/chunks/webpack.js",
@@ -50,6 +66,8 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/upload_download/route.js"
+=======
+>>>>>>> origin/main
     ]
   }
 }
