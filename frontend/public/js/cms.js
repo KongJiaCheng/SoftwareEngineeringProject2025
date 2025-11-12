@@ -119,7 +119,7 @@ export function initCMS() {
 
     const root = el('div', { class: 'cms-root' }, [
       el('div', { class: 'cms-topbar' }, [
-        el('div', { class: 'cms-title' }, ['3D CMS']),
+        el('div', { class: 'cms-title' }, ['ModelVerse']),
       ]),
       el('div', { class: 'cms-body' }, [filterBar, grid]),
     ]);
