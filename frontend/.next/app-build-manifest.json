@@ -30,6 +30,7 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/upload/page.js"
+<<<<<<< HEAD
     ],
     "/api/upload_download/route": [
       "static/chunks/webpack.js",
@@ -50,6 +51,8 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/auth/token/route.js"
+=======
+>>>>>>> origin/main
     ]
   }
 }

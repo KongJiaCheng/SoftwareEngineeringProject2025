@@ -1,5 +1,7 @@
 # upload_download/views.py
 import os, mimetypes
+mimetypes.add_type("model/gltf-binary", ".glb")
+mimetypes.add_type("model/gltf+json", ".gltf")
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
@@ -15,26 +17,35 @@ from asset_metadata.models import AssetMetadata
 from .serializers import AssetSerializer
 
 
-def _img_resolution(full_path: str):
+def asset_resolution(full_path: str):
     try:
         with Image.open(full_path) as im:
             return f"{int(im.width)}x{int(im.height)}"
     except Exception:
         return ""
 
+def _glb_polygon_count(full_path: str) -> int | None:   # return polygon count for .glb file
+    try:
+        import trimesh
+        scene = trimesh.load(full_path, force='scene')  # handles .glb
+        total = 0
+        # scene.geometry is a dict[str, Trimesh]
+        for geom in scene.geometry.values():
+            # faces is (N, 3); if missing, skip
+            faces = getattr(geom, "faces", None)
+            if faces is not None:
+                total += int(getattr(faces, "shape", [0])[0])
+        return total if total > 0 else None
+    except Exception:
+        return None
+
 
 def _to_timedelta(value):
-    """
-    Accepts:
-      - "HH:MM:SS" or "MM:SS" (string)
-      - seconds as int/float or numeric string
-    Returns timedelta or None.
-    """
-    if value is None or value == "":
+    if value is None or value == "": # blank
         return None
-    if isinstance(value, (int, float)):
+    if isinstance(value, (int, float)): # numeric
         return timedelta(seconds=float(value))
-    if isinstance(value, str):
+    if isinstance(value, str):  # string
         s = value.strip()
         # numeric string?
         try:
@@ -48,28 +59,27 @@ def _to_timedelta(value):
         except ValueError:
             return None
         if len(parts) == 3:
-            h, m, sec = parts
+            h, m, sec = parts   # HH, MM, SS
         elif len(parts) == 2:
             h, m, sec = 0, parts[0], parts[1]
         else:
             return None
-        return timedelta(hours=h, minutes=m, seconds=sec)
+        return timedelta(hours=h, minutes=m, seconds=sec)   # return timedelta
     return None
 
 
 def _payload(a: AssetMetadata):
-    # Only fields that exist in YOUR model
+    # Only fields that exist in the model
     return {
         "id": a.id,
         "file_name": a.file_name,
         "file_type": a.file_type or "",
-        "file_size": a.file_size,                     # MB
+        "file_size": a.file_size,                     
         "file_location": a.file_location or "",
         "description": a.description or "",
         "tags": a.tags or [],
         "resolution": a.resolution or "",
         "polygon_count": a.polygon_count,
-        # DurationField -> "HH:MM:SS" string for UI
         "duration": (str(a.duration) if a.duration is not None else None),
         "no_of_versions": a.no_of_versions,
         "created_at": a.created_at.isoformat() if a.created_at else None,
@@ -77,7 +87,7 @@ def _payload(a: AssetMetadata):
     }
 
 
-@api_view(["POST"])
+@api_view(["POST"]) # upload
 @authentication_classes([])      # dev-open
 @permission_classes([AllowAny])  # dev-open
 def upload(request):
@@ -85,7 +95,7 @@ def upload(request):
     if not upfile:
         return Response({"detail": "No file. Send single file in field 'file'."}, status=400)
 
-    # ---- side fields
+    # side fields
     file_name = request.POST.get("file_name") or upfile.name
     description = (request.POST.get("description") or "").strip()
     tags_raw = request.POST.get("tags", "")
@@ -125,6 +135,18 @@ def upload(request):
     else:
         subdir = "other"
 
+    # HARD CHECK: only images, videos, or .glb
+    lower_name = file_name.lower()
+    is_image = ctype.startswith("image/")
+    is_video = ctype.startswith("video/")
+    is_glb = lower_name.endswith((".glb"))
+
+    if not (is_image or is_video or is_glb):
+        return Response(
+            {"detail": "Unsupported file type. Only images, videos, .glb are allowed."},
+            status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        )
+
     # save only once to MEDIA_ROOT/<subdir>
     target_dir = os.path.join(settings.MEDIA_ROOT, subdir)
     os.makedirs(target_dir, exist_ok=True)
@@ -136,12 +158,17 @@ def upload(request):
     # resolution (prefer client value; else compute for images)
     resolution = (resolution_in.strip() if resolution_in else "")
     if not resolution and ctype.startswith("image/"):
-        resolution = _img_resolution(full_path) or None
+        resolution = asset_resolution(full_path) or None
     elif not resolution:
         resolution = None
 
     # duration
     duration_td = _to_timedelta(duration_raw) if duration_raw else None
+
+    if is_glb and (polygon_count is None):
+        auto_poly = _glb_polygon_count(full_path)
+    if auto_poly is not None:
+        polygon_count = auto_poly
 
     a = AssetMetadata.objects.create(
         file_name=file_name,
@@ -163,9 +190,9 @@ def upload(request):
 @api_view(["PATCH"])
 @authentication_classes([]) # dev-open
 @permission_classes([AllowAny]) # dev-open
-def update_asset(request, pk: int):
+def update_asset(request, pk: int): # partial update of metadata
     try:
-        asset = AssetMetadata.objects.get(pk=pk)
+        asset = AssetMetadata.objects.get(pk=pk)    # get existing
     except AssetMetadata.DoesNotExist:
         return Response({"detail": "Not found."}, status=404)
 
@@ -201,7 +228,7 @@ def update_asset(request, pk: int):
                 data["polygon_count"] = None  # or raise ValidationError
 
     # Allow the fields you actually want editable
-    allowed_keys = {"file_name", "description", "tags", "resolution", "polygon_count", "duration"}
+    allowed_keys = {"file_name", "description", "tags"}
     clean = {k: v for k, v in data.items() if k in allowed_keys}
 
     ser = AssetSerializer(asset, data=clean, partial=True)
@@ -218,19 +245,14 @@ def update_asset(request, pk: int):
 @authentication_classes([])      # dev-open
 @permission_classes([AllowAny])  # dev-open
 def download(request, pk):
-    """
-    Simple file download by id (uses file_location).
-    """
-    try:
-        asset = AssetMetadata.objects.get(pk=pk)
-    except AssetMetadata.DoesNotExist:
-        raise Http404("Asset not found")
+    from django.shortcuts import get_object_or_404
+    asset = get_object_or_404(AssetMetadata, pk=pk)
 
-    rel_path = asset.file_location or ""
-    if not rel_path:
-        raise Http404("No file path stored")
+    rel_path = asset.file_location or ""    # relative path in MEDIA_ROOT
+    full_path = os.path.join(settings.MEDIA_ROOT, rel_path.replace("/", os.sep))    # full path
+    if not os.path.exists(full_path):   # file missing
+        raise Http404("File not found on server")
 
-    file_path = os.path.join(settings.MEDIA_ROOT, rel_path.replace("/", os.sep))
-    if not os.path.exists(file_path):
-        raise Http404("File not found on disk")
-    return FileResponse(open(file_path, "rb"), as_attachment=True, filename=asset.file_name)
+    # browser will save to default downloads folder
+    return FileResponse(open(full_path, "rb"), as_attachment=True, filename=asset.file_name)
+

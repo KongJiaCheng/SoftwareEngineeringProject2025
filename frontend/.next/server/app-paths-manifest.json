@@ -1,5 +1,10 @@
 {
+<<<<<<< HEAD
   "/upload/page": "app/upload/page.js",
   "/login/page": "app/login/page.js",
+=======
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/api/asset_preview/route": "app/api/asset_preview/route.js",
+>>>>>>> origin/main
   "/main/page": "app/main/page.js"
 }
