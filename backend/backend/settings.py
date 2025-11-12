@@ -16,10 +16,11 @@ INSTALLED_APPS = [  # Installed applications
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "asset_metadata",
+    "roles",
     "upload_download",
-    "asset_preview"
-    
+    "asset_preview",
+    "asset_metadata.apps.AssetMetadataConfig", # for ready() auto cleanup method to run in apps.py  
+
 ]
 
 MIDDLEWARE = [
@@ -53,6 +54,7 @@ TEMPLATES = [
     },
 ]
 ROOT_URLCONF = "backend.urls"
+
 
 DATABASES = {   # Database configuration
     "default": {
