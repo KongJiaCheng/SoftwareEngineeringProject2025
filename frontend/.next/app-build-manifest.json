@@ -1,5 +1,21 @@
 {
   "pages": {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    "/not-found": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/not-found.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
+    ],
+=======
+>>>>>>> origin/main
+>>>>>>> origin/main
     "/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -11,25 +27,79 @@
       "static/chunks/main-app.js",
       "static/chunks/app/error.js"
     ],
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    "/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/login/page.js"
+    ],
+    "/api/auth/token/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/auth/token/route.js"
+    ],
+    "/admin/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/page.js"
+    ],
+    "/viewer/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/viewer/page.js"
+=======
+>>>>>>> origin/main
     "/not-found": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/not-found.js"
+<<<<<<< HEAD
+=======
+>>>>>>> origin/main
+>>>>>>> origin/main
     ],
     "/main/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/main/page.js"
     ],
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
+=======
+>>>>>>> origin/main
     "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/_not-found/page.js"
     ],
+<<<<<<< HEAD
+=======
+    "/edit/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/edit/[id]/page.js"
+    ],
+>>>>>>> origin/main
     "/upload/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/upload/page.js"
+<<<<<<< HEAD
+=======
+    ],
+    "/api/upload_download/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/upload_download/route.js"
+>>>>>>> origin/main
+>>>>>>> origin/main
     ]
   }
 }
