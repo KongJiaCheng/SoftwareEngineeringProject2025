@@ -1,18 +1,32 @@
 # backend/asset_preview/views.py
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from pathlib import Path
+from urllib.parse import urljoin
+import mimetypes
+
+from django.conf import settings
 from django.http import FileResponse, Http404
 from django.utils import timezone
-from django.conf import settings
-from pathlib import Path
-import os
-import mimetypes
+
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from asset_metadata.models import AssetMetadata
 from .serializers import AssetMetadataLiteSerializer
-from .utils import ensure_basic_info, build_previews, classify, guess_mime
+from .utils import ensure_basic_info, build_previews
+
+def _to_media_url(abs_or_rel_path: Path) -> str | None:
+    """
+    Convert absolute/relative filesystem path under MEDIA_ROOT to a public MEDIA_URL.
+    Returns None if path is falsy.
+    """
+    if not abs_or_rel_path:
+        return None
+    media_root = Path(settings.MEDIA_ROOT).resolve()
+    p = Path(abs_or_rel_path)
+    rel = p.relative_to(media_root) if p.is_absolute() else Path(p)
+    return urljoin(settings.MEDIA_URL, rel.as_posix())
 
 class AssetPreviewViewSet(viewsets.ModelViewSet):
     """
@@ -22,16 +36,34 @@ class AssetPreviewViewSet(viewsets.ModelViewSet):
     serializer_class = AssetMetadataLiteSerializer
     permission_classes = [IsAuthenticated]
 
-    # GET /api/preview/assets/{pk}/preview/
+    # Ensure basic info is up-to-date on list (file_size/file_type), then serialize
+    def list(self, request, *args, **kwargs):
+        media_root = Path(settings.MEDIA_ROOT)
+        for meta in self.get_queryset():
+            ensure_basic_info(meta, media_root)
+        return super().list(request, *args, **kwargs)
+
+    # GET /api/asset_preview/assets/{pk}/preview/
     @action(detail=True, methods=["get"])
     def preview(self, request, pk=None):
         meta = self.get_object()
         media_root = Path(settings.MEDIA_ROOT)
         ensure_basic_info(meta, media_root)
-        previews = build_previews(meta, media_root)  # return dict of preview URLs (thumb, poster, etc.)
-        return Response({"previews": previews}, status=status.HTTP_200_OK)
+        previews = build_previews(meta, media_root)  # returns dict with absolute Paths
 
-    # GET /api/preview/assets/{pk}/download/
+        thumb_url = _to_media_url(previews.get("thumbnail_path"))
+        prev_url  = _to_media_url(previews.get("preview_path"))
+
+        return Response(
+            {"previews": {
+                "kind": previews.get("kind"),
+                "thumbnail_url": thumb_url,
+                "preview_url": prev_url,
+            }},
+            status=status.HTTP_200_OK
+        )
+
+    # GET /api/asset_preview/assets/{pk}/download/
     @action(detail=True, methods=["get"])
     def download(self, request, pk=None):
         meta = self.get_object()
@@ -45,16 +77,15 @@ class AssetPreviewViewSet(viewsets.ModelViewSet):
             resp["Content-Type"] = mime
         return resp
 
-    # GET /api/preview/assets/{pk}/versions/
+    # GET /api/asset_preview/assets/{pk}/versions/
     @action(detail=True, methods=["get"])
     def versions(self, request, pk=None):
         """
-        Walk your versions directory convention and list existing versions with URLs.
+        Example convention: MEDIA_ROOT/versions/<stem>/vN/<filename>
         """
         meta = self.get_object()
         media_root = Path(settings.MEDIA_ROOT)
 
-        # Example convention: media_root / "versions" / <stem> / vN / <filename>
         stem = Path(meta.file_name).stem
         base = media_root / "versions" / stem
         items = []
@@ -64,12 +95,12 @@ class AssetPreviewViewSet(viewsets.ModelViewSet):
                     rel = p.relative_to(media_root).as_posix()
                     items.append({
                         "version_path": rel,
-                        "version": p.parts[-3] if "v" in p.parts[-3] else None,  # crude parse like "v3"
+                        "version": p.parts[-3] if len(p.parts) >= 3 and p.parts[-3].startswith("v") else None,
                         "url": f"{settings.MEDIA_URL.rstrip('/')}/{rel}",
                     })
         return Response({"versions": items}, status=status.HTTP_200_OK)
 
-    # POST /api/preview/assets/{pk}/create_version/
+    # POST /api/asset_preview/assets/{pk}/create_version/
     @action(detail=True, methods=["post"])
     def create_version(self, request, pk=None):
         """
