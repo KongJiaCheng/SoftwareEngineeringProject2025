@@ -120,10 +120,8 @@ export function initCMS() {
     const root = el('div', { class: 'cms-root' }, [
       el('div', { class: 'cms-topbar' }, [
         el('div', { class: 'cms-title' }, ['ModelVerse']),
-        el('button', {class: 'btn',id: 'uploadBtn',onclick: () => { window.location.href = '/upload'; }}, ['Upload']),
       ]),
       el('div', { class: 'cms-body' }, [filterBar, grid]),
-      
     ]);
 
     document.body.innerHTML = '';
