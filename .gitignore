@@ -3,9 +3,12 @@
 # ========================
 node_modules/
 .next/
+**/.next/
+**/node_modules/
+
 
 # Python / Django
-__pycache__/
+**/__pycache__/
 
 # Ignore all migration files but keep __init__.py
 **/migrations/
