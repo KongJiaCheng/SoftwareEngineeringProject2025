@@ -36,15 +36,13 @@ software
 ```bash
 python manage.py makemigrations
 python manage.py migrate
-```
-### start server (use everytime to run backend)
-```bash
+# start server (use everytime to run backend)
 python manage.py runserver
 ```
 ### paste this url link in the browser: http://127.0.0.1:8000/admin/asset_metadata/assetmetadata/
 ## Frontend
 
-install dependencies
+install dependencies then run development server
 ```bash
 # got to backend
 cd frontend
@@ -52,6 +50,8 @@ cd frontend
 ```bash
 #install dependencies
 npm install @chakra-ui/react @chakra-ui/system @emotion/react @emotion/styled framer-motion bcryptjs
+#run development server
+npm run dev
 ```
 
 First, run the development server:

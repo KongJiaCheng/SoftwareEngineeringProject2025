@@ -1,50 +1,66 @@
-import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import fs from 'fs';
-import path from 'path';
+import { NextResponse } from "next/server";
 
-// Accepts image or 3D asset uploads (JPG, PNG, GLB, OBJ, FBX, ZIP)
+export const runtime = "nodejs"; // needed for streaming form-data
+
+function getBase() {
+  const base = process.env.BACKEND_API_BASE;
+  if (!base) throw new Error("BACKEND_API_BASE env var not set");
+  return base.replace(/\/+$/, "");
+}
+
 export async function POST(req) {
   try {
-    const formData = await req.formData();
-    const file = formData.get('file') || formData.get('files');
-
-    if (!file) {
-      console.error('❌ No file found in request');
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-    }
-
-    // Derive extension to route files to proper subfolders
-    const ext = path.extname(file.name).toLowerCase();
-    const is3D = ['.glb', '.gltf', '.obj', '.fbx', '.zip'].includes(ext);
-
-    // Base upload directory
-    const uploadDir = path.join(
-      process.cwd(),
-      'public',
-      'uploads',
-      is3D ? '3d' : 'images'
-    );
-
-    // Create the folder if missing
-    if (!fs.existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    // Write file buffer
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filePath = path.join(uploadDir, file.name);
-    await writeFile(filePath, buffer);
-
-    console.log(`✅ Uploaded ${is3D ? '3D asset' : 'image'}:`, file.name);
-
-    return NextResponse.json({
-      ok: true,
-      type: is3D ? '3d' : 'image',
-      path: `/uploads/${is3D ? '3d' : 'images'}/${file.name}`,
+    const formData = await req.formData(); // carries "files"
+    const r = await fetch(`${getBase()}/upload/`, {
+      method: "POST",
+      body: formData,
+      // NOTE: do not set Content-Type manually
     });
-  } catch (err) {
-    console.error('❌ Upload failed:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const data = await r.json().catch(() => ({}));
+    return NextResponse.json(data, { status: r.status });
+  } catch (e) {
+    return NextResponse.json({ detail: String(e) }, { status: 500 });
   }
 }
+
+export async function GET(req) {
+  const url = new URL(req.url);
+  const isDownload = url.searchParams.has("download");
+  const id = url.searchParams.get("id");
+
+  if (isDownload) {
+    if (!id) return NextResponse.json({ detail: "Missing id" }, { status: 400 });
+
+    const r = await fetch(`${getBase()}/upload_download/${id}/download/`);
+    if (!r.ok && r.headers.get("content-type")?.includes("application/json")) {
+      const data = await r.json().catch(() => ({}));
+      return NextResponse.json(data, { status: r.status });
+    }
+    return new Response(r.body, {
+      status: r.status,
+      headers: {
+        "Content-Type": r.headers.get("content-type") || "application/octet-stream",
+        "Content-Disposition": r.headers.get("content-disposition") || "attachment",
+        "Content-Length": r.headers.get("content-length") || "",
+      },
+    });
+  }
+
+  // original JSON GET behavior
+  const r = await fetch(`${getBase()}/upload/`, { method: "GET" });
+  const data = await r.json().catch(() => ({}));
+  return NextResponse.json(data, { status: r.status });
+}
+
+export async function PATCH(_req, { params }) {
+  const base = process.env.BACKEND_API_BASE;
+  const body = await _req.text();
+  const r = await fetch(`${base}/upload_download/${params.id}/`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body,
+  });
+  const data = await r.json().catch(() => ({}));
+  return NextResponse.json(data, { status: r.status });
+}
+

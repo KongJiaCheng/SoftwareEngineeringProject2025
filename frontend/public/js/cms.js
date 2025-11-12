@@ -102,68 +102,19 @@ const filterBar = el('div', { class: 'filter-bar' }, [
   ]),
 ]);
 
-const root = el('div', { class: 'cms-root' }, [
-  el('div', { class: 'cms-topbar' }, [
-    el('div', { class: 'cms-title' }, ['3D CMS']),
-    el('button', { class: 'btn', id: 'uploadBtn' }, ['Upload']),
-  ]),
-  el('div', { class: 'cms-body' }, [filterBar, grid]),
-]);
 
-document.body.innerHTML = '';
-document.body.appendChild(root);
+    const root = el('div', { class: 'cms-root' }, [
+      el('div', { class: 'cms-topbar' }, [
+        el('div', { class: 'cms-title' }, ['3D CMS']),
+        el('button', { class: 'btn', id: 'uploadBtn', onclick: () => { window.location.href = '/upload'; }}, ['Upload']), // ✅ navigates to app/upload/page.js
+      ]),
+      el('div', { class: 'cms-body' }, [filterBar, grid]),
+    ]);
 
-    // === Upload Handling ===
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.style.display = 'none';
-    document.body.appendChild(input);
+    document.body.innerHTML = '';
+    document.body.appendChild(root);
 
-    document.getElementById('uploadBtn').onclick = () => input.click();
-    uploadZone.onclick = () => input.click();
 
-    ['dragover', 'drop'].forEach(evt =>
-      uploadZone.addEventListener(evt, e => e.preventDefault())
-    );
-
-    uploadZone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
-    input.addEventListener('change', e => handleFiles(e.target.files));
-
-    function handleFiles(fileList) {
-      const files = Array.from(fileList);
-      files.forEach(uploadFile);
-    }
-
-    async function uploadFile(file) {
-      const card = el('div', { class: 'cms-card', id: 'upload-' + file.name }, [
-        el('div', { class: 'cms-type' }, [file.name.split('.').pop().toUpperCase()]),
-        el('h3', null, [file.name]),
-        el('div', null, [(file.size / 1048576).toFixed(2) + ' MB']),
-        el('div', { class: 'progress' }, [el('div', { class: 'bar', id: 'bar-' + file.name })]),
-      ]);
-      grid.appendChild(card);
-
-      const formData = new FormData();
-      formData.append('file', file, file.name);
-
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/upload_download', true);
-      xhr.upload.onprogress = (e) => {
-        const percent = (e.loaded / e.total) * 100;
-        document.getElementById('bar-' + file.name).style.width = percent + '%';
-      };
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          console.log('✅ Uploaded:', file.name);
-          refreshAssets();
-        } else {
-          console.error('❌ Upload failed:', file.name);
-        }
-      };
-      xhr.onerror = () => console.error('❌ Network error for', file.name);
-      xhr.send(formData);
-    }
 
     async function refreshAssets() {
       try {
@@ -272,7 +223,7 @@ document.body.appendChild(root);
           el('button', { class: 'btn' }, ['Edit']),
           el('button', { class: 'btn' }, ['Delete']),
         ]),
-        el('button', { class: 'btn' }, ['Download'])
+        el('button', { class: 'btn', onclick: () => window.location.href = `/api/upload_download/${asset.id}/download` }, ['Download'])
       );
 
       return el('div', { class: 'cms-card' }, cardChildren);
