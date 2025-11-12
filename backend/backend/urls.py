@@ -24,24 +24,3 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-
-from django.http import JsonResponse
-
-def fake_asset(request, pk):
-    return JsonResponse({
-        
-        "id": 1,
-        "asset_name": "Test Asset",
-        "file_type": "video/mp4",
-        "file_size": "12 MB",
-        "file_location": "/media/upload_download/test.mp4",
-        "description": "Sample description",
-        "tags": "sample, testing",
-        "duration": "00:01:23",
-        "polygon_count": null
-
-    })
-
-urlpatterns += [
-    path("api-test/<int:pk>/", fake_asset),
-]
