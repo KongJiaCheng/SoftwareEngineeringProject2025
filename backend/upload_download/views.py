@@ -16,7 +16,7 @@ from PIL import Image
 # from moviepy.editor import VideoFileClip
 
 
-  
+
 # Uploader # 
 @api_view(["POST"])
 def upload(request):    # handles file uploads

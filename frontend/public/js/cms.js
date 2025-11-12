@@ -49,61 +49,69 @@ export function initCMS() {
     `);
 
     // === DOM structure ===
-    const grid = el('div', { class: 'cms-grid', id: 'cmsGrid' });
+   // === DOM structure ===
+const grid = el('div', { class: 'cms-grid', id: 'cmsGrid' });
 
-    const filterBar = el('div', { class: 'filter-bar' }, [
-      el('input', {
-        class: 'filter-input',
-        placeholder: '🔍 Search assets...',
-        id: 'filterSearch',
-        oninput: applyFilters,
-      }),
-      el('select', {
-        class: 'filter-select',
-        id: 'filterType',
-        onchange: applyFilters,
-      }, [
-        el('option', { value: 'all' }, ['All Types']),
-        el('option', { value: '3d' }, ['3D Assets']),
-        el('option', { value: 'image' }, ['Images']),
-        el('option', { value: 'other' }, ['Other Files']),
-      ]),
-      el('select', {
-        class: 'filter-select',
-        id: 'filterSize',
-        onchange: applyFilters,
-      }, [
-        el('option', { value: 'all' }, ['All Sizes']),
-        el('option', { value: 'small' }, ['Small (<5MB)']),
-        el('option', { value: 'medium' }, ['Medium (5–50MB)']),
-        el('option', { value: 'large' }, ['Large (>50MB)']),
-      ]),
-      el('select', {
-        class: 'filter-select',
-        id: 'filterDate',
-        onchange: applyFilters,
-      }, [
-        el('option', { value: 'all' }, ['All Time']),
-        el('option', { value: '24h' }, ['Last 24h']),
-        el('option', { value: '7d' }, ['Last 7 Days']),
-        el('option', { value: '30d' }, ['Last 30 Days']),
-      ]),
-    ]);
+const filterBar = el('div', { class: 'filter-bar' }, [
+  el('input', {
+    class: 'filter-input',
+    placeholder: '🔍 Search by name, description, or tag...',
+    id: 'filterSearch',
+    oninput: applyFilters,
+  }),
+  el('select', {
+    class: 'filter-select',
+    id: 'filterType',
+    onchange: applyFilters,
+  }, [
+    el('option', { value: 'all' }, ['All File Types']),
+    el('option', { value: '3d' }, ['3D Models']),
+    el('option', { value: 'image' }, ['Images']),
+    el('option', { value: 'video' }, ['Videos']),
+    el('option', { value: 'document' }, ['Documents']),
+  ]),
+  el('select', {
+    class: 'filter-select',
+    id: 'filterResolution',
+    onchange: applyFilters,
+  }, [
+    el('option', { value: 'all' }, ['All Resolutions']),
+    el('option', { value: 'low' }, ['Low (<720p)']),
+    el('option', { value: 'medium' }, ['HD (720p–1080p)']),
+    el('option', { value: 'high' }, ['Full HD+ (1080p+)']),
+  ]),
+  el('select', {
+    class: 'filter-select',
+    id: 'filterPolygon',
+    onchange: applyFilters,
+  }, [
+    el('option', { value: 'all' }, ['All Poly Counts']),
+    el('option', { value: 'low' }, ['Low (<10k)']),
+    el('option', { value: 'medium' }, ['Medium (10k–100k)']),
+    el('option', { value: 'high' }, ['High (>100k)']),
+  ]),
+  el('select', {
+    class: 'filter-select',
+    id: 'filterDate',
+    onchange: applyFilters,
+  }, [
+    el('option', { value: 'all' }, ['All Dates']),
+    el('option', { value: '24h' }, ['Last 24 Hours']),
+    el('option', { value: '7d' }, ['Last 7 Days']),
+    el('option', { value: '30d' }, ['Last 30 Days']),
+  ]),
+]);
 
-    const uploadZone = el('div', { class: 'cms-upload', id: 'uploadZone' }, [
-      'Drag & drop files (GLB, OBJ, FBX, ZIP, JPG, PNG) here or click “Upload”',
-    ]);
+const root = el('div', { class: 'cms-root' }, [
+  el('div', { class: 'cms-topbar' }, [
+    el('div', { class: 'cms-title' }, ['3D CMS']),
+    el('button', { class: 'btn', id: 'uploadBtn' }, ['Upload']),
+  ]),
+  el('div', { class: 'cms-body' }, [filterBar, grid]),
+]);
 
-    const root = el('div', { class: 'cms-root' }, [
-      el('div', { class: 'cms-topbar' }, [
-        el('div', { class: 'cms-title' }, ['3D CMS']),
-        el('button', { class: 'btn', id: 'uploadBtn' }, ['Upload']),
-      ]),
-      el('div', { class: 'cms-body' }, [filterBar, uploadZone, grid]),
-    ]);
-
-    document.body.innerHTML = '';
-    document.body.appendChild(root);
+document.body.innerHTML = '';
+document.body.appendChild(root);
 
     // === Upload Handling ===
     const input = document.createElement('input');
@@ -180,45 +188,62 @@ export function initCMS() {
     }
 
     function applyFilters() {
-      const search = document.getElementById('filterSearch').value.toLowerCase();
-      const type = document.getElementById('filterType').value;
-      const size = document.getElementById('filterSize').value;
-      const date = document.getElementById('filterDate').value;
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+  const type = document.getElementById('filterType').value;
+  const resolution = document.getElementById('filterResolution').value;
+  const polygon = document.getElementById('filterPolygon').value;
+  const date = document.getElementById('filterDate').value;
 
-      const now = new Date();
-      const filtered = allAssets.filter(a => {
-        const nameMatch = a.name.toLowerCase().includes(search);
-        const tagMatch = a.tags?.some(t => t.includes(search));
+  const now = new Date();
 
-        // type filter
-        const typeMatch =
-          type === 'all' ||
-          (type === '3d' && a.tags.includes('3d')) ||
-          (type === 'image' && a.tags.includes('image')) ||
-          (type === 'other' && !a.tags.includes('3d') && !a.tags.includes('image'));
+  const filtered = allAssets.filter(a => {
+    // text search (name, description, tags)
+    const nameMatch = a.file_name?.toLowerCase().includes(search);
+    const descMatch = a.description?.toLowerCase().includes(search);
+    const tagMatch = (a.tags || []).some(t => t.toLowerCase().includes(search));
 
-        // size filter
-        const sizeMB = a.size / 1048576;
-        const sizeMatch =
-          size === 'all' ||
-          (size === 'small' && sizeMB < 5) ||
-          (size === 'medium' && sizeMB >= 5 && sizeMB <= 50) ||
-          (size === 'large' && sizeMB > 50);
+    // file type filter
+    const typeMatch =
+      type === 'all' ||
+      (type === '3d' && ['glb', 'gltf', 'fbx', 'obj'].includes(a.file_type)) ||
+      (type === 'image' && ['jpg', 'jpeg', 'png', 'gif'].includes(a.file_type)) ||
+      (type === 'video' && ['mp4', 'mov', 'avi'].includes(a.file_type)) ||
+      (type === 'document' && ['pdf', 'docx', 'txt'].includes(a.file_type));
 
-        // date filter
-        const ageHours = (now - new Date(a.uploadedAt)) / (1000 * 60 * 60);
-        const dateMatch =
-          date === 'all' ||
-          (date === '24h' && ageHours <= 24) ||
-          (date === '7d' && ageHours <= 168) ||
-          (date === '30d' && ageHours <= 720);
+    // resolution filter (if available)
+    const resMatch = (() => {
+      if (resolution === 'all' || !a.resolution) return true;
+      const [w, h] = a.resolution.split('x').map(Number);
+      if (!w || !h) return true;
+      if (resolution === 'low') return h < 720;
+      if (resolution === 'medium') return h >= 720 && h < 1080;
+      if (resolution === 'high') return h >= 1080;
+      return true;
+    })();
 
-        return (nameMatch || tagMatch) && typeMatch && sizeMatch && dateMatch;
-      });
+    // polygon filter (for 3D models)
+    const polyMatch = (() => {
+      if (polygon === 'all' || !a.polygon_count) return true;
+      if (polygon === 'low') return a.polygon_count < 10000;
+      if (polygon === 'medium') return a.polygon_count >= 10000 && a.polygon_count <= 100000;
+      if (polygon === 'high') return a.polygon_count > 100000;
+      return true;
+    })();
 
-      grid.innerHTML = '';
-      filtered.forEach(asset => grid.appendChild(createAssetCard(asset)));
-    }
+    // date filter
+    const ageHours = (now - new Date(a.modified_at || a.created_at)) / (1000 * 60 * 60);
+    const dateMatch =
+      date === 'all' ||
+      (date === '24h' && ageHours <= 24) ||
+      (date === '7d' && ageHours <= 168) ||
+      (date === '30d' && ageHours <= 720);
+
+    return (nameMatch || descMatch || tagMatch) && typeMatch && resMatch && polyMatch && dateMatch;
+  });
+
+  grid.innerHTML = '';
+  filtered.forEach(asset => grid.appendChild(createAssetCard(asset)));
+}
 
     function createAssetCard(data) {
       const cardChildren = [
