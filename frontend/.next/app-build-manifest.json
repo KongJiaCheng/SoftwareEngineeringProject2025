@@ -1,18 +1,5 @@
 {
   "pages": {
-<<<<<<< HEAD
-    "/not-found": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/not-found.js"
-    ],
-    "/_not-found/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
-    ],
-=======
->>>>>>> origin/main
     "/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -24,7 +11,21 @@
       "static/chunks/main-app.js",
       "static/chunks/app/error.js"
     ],
-<<<<<<< HEAD
+    "/not-found": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/not-found.js"
+    ],
+    "/edit/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/edit/[id]/page.js"
+    ],
+    "/main/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/main/page.js"
+    ],
     "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -35,45 +36,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/auth/token/route.js"
     ],
-    "/admin/page": [
+    "/api/asset_preview/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/page.js"
-    ],
-    "/viewer/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/viewer/page.js"
-=======
-    "/not-found": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/not-found.js"
->>>>>>> origin/main
-    ],
-    "/edit/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/edit/[id]/page.js"
-    ],
-<<<<<<< HEAD
-    "/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
-=======
-    "/_not-found/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
-    ],
-    "/main/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-<<<<<<< HEAD
-      "static/chunks/app/main/page.js"
-=======
-      "static/chunks/app/edit/[id]/page.js"
+      "static/chunks/app/api/asset_preview/route.js"
     ],
     "/upload/page": [
       "static/chunks/webpack.js",
@@ -84,8 +50,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/upload_download/route.js"
->>>>>>> origin/main
->>>>>>> origin/main
     ]
   }
 }
