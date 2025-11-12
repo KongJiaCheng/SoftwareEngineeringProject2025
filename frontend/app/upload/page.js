@@ -283,6 +283,17 @@ export default function UploadPage() {
     const key = file.name;
     const meta = localEdits[key] || {};
 
+    // Require a file name
+    const finalName = (meta.file_name || "").trim() || file.name;
+    
+    // Validate file type
+    async function saveOneNew(file) {
+      if (!isAllowedFile(file)) {
+        alert("Unsupported file type. Only images, videos, .glb, or .gltf are allowed.");
+        throw new Error("Unsupported file type");
+      }
+    }
+
     const form = new FormData();
     // NOTE: keeping field name "file" to match your existing backend handler for this endpoint.
     form.append("file", file, finalName);
