@@ -23,13 +23,22 @@ class AssetMetadata(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     modified_by = models.ForeignKey(
-        #settings.AUTH_USER_MODEL,
         User,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name="modified_assets"
     )
 
+
     def __str__(self):
         return self.file_name
+
+
+    # Delete the record in database if user delete the file directly from the media folder
+    #def delete(self, *args, **kwargs):
+    #    if self.upload_file:
+    #        self.upload_file.delete(save=False)  # deletes the actual file
+    #    super().delete(*args, **kwargs)  # deletes DB record
+
+
 
