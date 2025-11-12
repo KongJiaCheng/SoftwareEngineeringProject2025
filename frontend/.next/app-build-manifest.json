@@ -25,6 +25,7 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/asset_preview/route.js"
+<<<<<<< HEAD
     ],
     "/upload/page": [
       "static/chunks/webpack.js",
@@ -51,6 +52,8 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/auth/token/route.js"
+=======
+>>>>>>> origin/main
 =======
 >>>>>>> origin/main
     ]

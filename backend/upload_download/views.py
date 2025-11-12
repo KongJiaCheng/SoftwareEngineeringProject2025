@@ -1,7 +1,5 @@
 # upload_download/views.py
 import os, mimetypes
-mimetypes.add_type("model/gltf-binary", ".glb")
-mimetypes.add_type("model/gltf+json", ".gltf")
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
@@ -17,27 +15,12 @@ from asset_metadata.models import AssetMetadata
 from .serializers import AssetSerializer
 
 
-def asset_resolution(full_path: str):
+def _img_resolution(full_path: str):
     try:
         with Image.open(full_path) as im:
             return f"{int(im.width)}x{int(im.height)}"
     except Exception:
         return ""
-
-def _glb_polygon_count(full_path: str) -> int | None:   # return polygon count for .glb file
-    try:
-        import trimesh
-        scene = trimesh.load(full_path, force='scene')  # handles .glb
-        total = 0
-        # scene.geometry is a dict[str, Trimesh]
-        for geom in scene.geometry.values():
-            # faces is (N, 3); if missing, skip
-            faces = getattr(geom, "faces", None)
-            if faces is not None:
-                total += int(getattr(faces, "shape", [0])[0])
-        return total if total > 0 else None
-    except Exception:
-        return None
 
 
 def _to_timedelta(value):
@@ -80,6 +63,7 @@ def _payload(a: AssetMetadata):
         "tags": a.tags or [],
         "resolution": a.resolution or "",
         "polygon_count": a.polygon_count,
+        # DurationField -> "HH:MM:SS" string for UI
         "duration": (str(a.duration) if a.duration is not None else None),
         "no_of_versions": a.no_of_versions,
         "created_at": a.created_at.isoformat() if a.created_at else None,
@@ -158,17 +142,12 @@ def upload(request):
     # resolution (prefer client value; else compute for images)
     resolution = (resolution_in.strip() if resolution_in else "")
     if not resolution and ctype.startswith("image/"):
-        resolution = asset_resolution(full_path) or None
+        resolution = _img_resolution(full_path) or None
     elif not resolution:
         resolution = None
 
     # duration
     duration_td = _to_timedelta(duration_raw) if duration_raw else None
-
-    if is_glb and (polygon_count is None):
-        auto_poly = _glb_polygon_count(full_path)
-    if auto_poly is not None:
-        polygon_count = auto_poly
 
     a = AssetMetadata.objects.create(
         file_name=file_name,
