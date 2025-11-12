@@ -105,7 +105,7 @@ const filterBar = el('div', { class: 'filter-bar' }, [
 
     const root = el('div', { class: 'cms-root' }, [
       el('div', { class: 'cms-topbar' }, [
-        el('div', { class: 'cms-title' }, ['3D CMS']),
+        el('div', { class: 'cms-title' }, ['ModelVerse']),
         el('button', { class: 'btn', id: 'uploadBtn', onclick: () => { window.location.href = '/upload'; }}, ['Upload']), // ✅ navigates to app/upload/page.js
       ]),
       el('div', { class: 'cms-body' }, [filterBar, grid]),
