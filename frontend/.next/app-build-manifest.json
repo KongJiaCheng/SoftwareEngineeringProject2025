@@ -21,25 +21,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/main/page.js"
     ],
-    "/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
-    ],
-    "/api/auth/token/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/token/route.js"
-    ],
     "/api/asset_preview/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/asset_preview/route.js"
     ],
-    "/edit/[id]/page": [
+    "/upload/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/edit/[id]/page.js"
+      "static/chunks/app/upload/page.js"
+    ],
+    "/api/upload_download/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/upload_download/route.js"
     ],
     "/_not-found/page": [
       "static/chunks/webpack.js",

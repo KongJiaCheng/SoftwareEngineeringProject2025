@@ -40,7 +40,7 @@ export function initCMS() {
       list: '/api/asset_preview', // Next.js route -> Django /api/preview/assets/
       detail: (id) => `/api/asset_preview?id=${id}`,
       preview: (id) => `/api/preview/assets/${id}/preview/`,
-      download: (id) => `/api/preview/assets/${id}/download/`,
+      download: (id) => `/api/upload?download=1&id=${id}`,
       versions: (id) => `/api/preview/assets/${id}/versions/`,
       createVersion: (id) => `/api/preview/assets/${id}/create_version/`,
       credentials: 'include',
@@ -202,7 +202,7 @@ export function initCMS() {
           (data.tags || []).map(t => el('div', { class: 'cms-tag' }, [t]))
         ),
         el('div', { style: 'display:flex;gap:10px;margin-top:6px;' }, [
-          el('button', { class: 'btn', onclick: () => { window.location.href = '/edit/${asset.id'; }}, ['Edit']),
+          el("button",{class:"btn",onclick:e=>{e.stopPropagation();window.location.href=`/edit/${data.id}`}},["Edit"])
         ]),
         el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doDownload(data);} }, ['Download'])
       );
@@ -213,13 +213,14 @@ export function initCMS() {
     // === Actions ===
     function doDownload(asset) {
       const url = API.download(asset.id);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = asset.name || true;
       document.body.appendChild(a);
       a.click();
       a.remove();
     }
+
 
     async function doDelete(asset) {
       alert(`Delete ${asset.name} (hook your API here)`);
@@ -304,8 +305,8 @@ export function initCMS() {
 
       // Actions
       const actions = el('div', { class:'row' }, [
-        el('button', { class: 'btn', onclick: () => { window.location.href = '/edit/${asset.id'; }}, ['Edit']),
-        el('button', { class:'btn', onclick: ()=>doDownload(asset) }, ['Download']),
+        el("button",{class:"btn",onclick:e=>{e.stopPropagation();window.location.href=`/edit/${data.id}`}},["Edit"]),
+        el("button",{class:"btn",onclick:e=>{e.stopPropagation();doDownload(data)}},["Download"]),
         el('button', { class:'btn', onclick: ()=>modal.remove() }, ['Close']),
       ]);
       right.appendChild(actions);

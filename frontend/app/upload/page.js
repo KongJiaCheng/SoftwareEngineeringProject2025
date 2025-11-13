@@ -66,23 +66,25 @@ export default function UploadPage() {
   };
 
   // Build default edit object from a file + client probes
- const primedFrom = (f) => {
-  const ext = fileExt(f.name);
-  const type = String(
-    f.type || (ext === ".glb" ? "model/gltf-binary" : ext === ".gltf" ? "model/gltf+json" : "")
-  ).toLowerCase();
+  const primedFrom = (f) => {
+    const ext = fileExt(f.name);
+    const type = String(
+      f.type || (ext === ".glb" ? "model/gltf-binary" : ext === ".gltf" ? "model/gltf+json" : "")
+    ).toLowerCase();
 
-  return {
-    file_name: f.name,
-    file_type: type,
-    file_size: f.size,
-    description: "",
-    tags: "[]",
-    resolution: resProbe[f.name] || "",   // auto (read-only)
-    duration: vidDur[f.name] || "",       // auto for videos (read-only)
-    polygon_count: "",                    // GLB optional (editable)
+    return {
+      file_name: f.name,
+      file_type: type,
+      file_size: f.size,
+      description: "",
+      tags: "[]",
+      resolution: resProbe[f.name] || "",   // auto (read-only)
+      duration: vidDur[f.name] || "",       // auto for videos (read-only)
+      polygon_count: "",                    // GLB optional (editable in future if needed)
+      no_of_versions: 1,                    // default; real value comes from backend after save
+    };  
   };
-};
+
 
 
   /** Predict save path immediately on pick/drop (mirrors backend date folders). */
@@ -285,41 +287,35 @@ export default function UploadPage() {
 
     // Require a file name
     const finalName = (meta.file_name || "").trim() || file.name;
-    
+
     // Validate file type
-    async function saveOneNew(file) {
-      if (!isAllowedFile(file)) {
-        alert("Unsupported file type. Only images, videos, .glb, or .gltf are allowed.");
-        throw new Error("Unsupported file type");
-      }
+    if (!isAllowedFile(file)) {
+      alert("Unsupported file type. Only images, videos, .glb, or .gltf are allowed.");
+      throw new Error("Unsupported file type");
     }
 
     const form = new FormData();
-    // NOTE: keeping field name "file" to match your existing backend handler for this endpoint.
     form.append("file", file, finalName);
     form.append("file_name", finalName);
     form.append("description", meta.description || "");
-    form.append("tags", meta.tags || "[]");             // server accepts JSON or comma list
+    form.append("tags", meta.tags || "[]");
 
-    // Always include resolution if we have it (server will also try to detect for images)
     if (meta.resolution) form.append("resolution", String(meta.resolution));
 
-    // Videos: include duration seconds if available
     if (isVideo(meta.file_type || file.type)) {
       const d = String(meta.duration || "").trim();
       if (d) form.append("duration", d);
     }
 
-    // GLB: optional polygon_count
     if (isGLB(meta.file_type || file.type) || finalName.toLowerCase().endsWith(".glb")) {
-      if (meta.polygon_count !== undefined) form.append("polygon_count", String(meta.polygon_count || "").trim());
+      if (meta.polygon_count !== undefined)
+        form.append("polygon_count", String(meta.polygon_count || "").trim());
     }
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/upload_download", true); // keep your existing endpoint
+      xhr.open("POST", "/api/upload_download", true);
 
-      // progress
       xhr.upload.addEventListener("progress", (evt) => {
         if (!evt.lengthComputable) return;
         const pct = Math.round((evt.loaded / evt.total) * 100);
@@ -331,7 +327,9 @@ export default function UploadPage() {
         const ct = xhr.getResponseHeader("content-type") || "";
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
-            const j = ct.includes("application/json") ? JSON.parse(xhr.responseText) : { ok: true };
+            const j = ct.includes("application/json")
+              ? JSON.parse(xhr.responseText)
+              : { ok: true };
             resolve(j);
           } catch {
             resolve({ ok: true });
@@ -356,7 +354,6 @@ export default function UploadPage() {
       xhr.send(form);
     })
       .then((payload) => {
-        // Capture the server's returned row to override predicted location
         const row = payload?.asset || payload;
         setSavedInfo((m) => ({ ...m, [key]: row }));
         setSaveOK((s) => ({ ...s, [key]: true }));
@@ -370,6 +367,7 @@ export default function UploadPage() {
         setSaveBusy((s) => ({ ...s, [key]: false }));
       });
   }
+
 
   // UI
   function renderDropZone() {

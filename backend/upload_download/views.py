@@ -57,7 +57,7 @@ def _payload(a: AssetMetadata):
         "id": a.id,
         "file_name": a.file_name,
         "file_type": a.file_type or "",
-        "file_size": a.file_size,                     
+        "file_size": a.file_size,
         "file_location": a.file_location or "",
         "description": a.description or "",
         "tags": a.tags or [],
@@ -71,7 +71,7 @@ def _payload(a: AssetMetadata):
     }
 
 
-@api_view(["POST"]) # upload
+@api_view(["POST"])  # upload
 @authentication_classes([])      # dev-open
 @permission_classes([AllowAny])  # dev-open
 def upload(request):
@@ -109,21 +109,21 @@ def upload(request):
     ctype = getattr(upfile, "content_type", None) or mimetypes.guess_type(file_name)[0] or "application/octet-stream"
     size_mb = round((getattr(upfile, "size", 0) or 0) / (1024 * 1024), 4)
 
-    # decide subdir once (NO initial save to root)
+    # decide subdir once (by type)
     if ctype.startswith("image/"):
-        subdir = "image"
+        base_subdir = "image"
     elif ctype.startswith("video/"):
-        subdir = "video"
+        base_subdir = "video"
     elif "gltf" in ctype or "glb" in ctype or file_name.lower().endswith((".glb", ".gltf")):
-        subdir = "model"
+        base_subdir = "model"
     else:
-        subdir = "other"
+        base_subdir = "other"
 
     # HARD CHECK: only images, videos, or .glb
     lower_name = file_name.lower()
     is_image = ctype.startswith("image/")
     is_video = ctype.startswith("video/")
-    is_glb = lower_name.endswith((".glb"))
+    is_glb = lower_name.endswith(".glb")
 
     if not (is_image or is_video or is_glb):
         return Response(
@@ -131,12 +131,31 @@ def upload(request):
             status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         )
 
-    # save only once to MEDIA_ROOT/<subdir>
-    target_dir = os.path.join(settings.MEDIA_ROOT, subdir)
+    # === VERSIONING LOGIC ===
+    # Look for existing assets with the same file_name AND real files on disk
+    existing_qs = AssetMetadata.objects.filter(file_name=file_name)
+    existing_valid = []
+    for a in existing_qs:
+        rel = (a.file_location or "").strip()
+        if not rel:
+            continue
+        full = os.path.join(settings.MEDIA_ROOT, rel.replace("/", os.sep))
+        if os.path.exists(full):
+            existing_valid.append(a)
+
+    existing_count = len(existing_valid)          # how many real files already exist
+    new_version_index = existing_count + 1        # this upload will be version N
+    total_versions = new_version_index            # total number of versions for this name
+
+    # store file as: <type>/<version>/filename
+    # e.g. MEDIA_ROOT/image/1/mylogo.png
+    versioned_subdir = os.path.join(base_subdir, str(new_version_index))
+    target_dir = os.path.join(settings.MEDIA_ROOT, versioned_subdir)
     os.makedirs(target_dir, exist_ok=True)
+
     storage = FileSystemStorage(location=target_dir)
     saved_name = storage.save(file_name, upfile)
-    saved_rel_path = os.path.join(subdir, saved_name).replace("\\", "/")
+    saved_rel_path = os.path.join(versioned_subdir, saved_name).replace("\\", "/")
     full_path = os.path.join(settings.MEDIA_ROOT, saved_rel_path.replace("/", os.sep))
 
     # resolution (prefer client value; else compute for images)
@@ -149,17 +168,22 @@ def upload(request):
     # duration
     duration_td = _to_timedelta(duration_raw) if duration_raw else None
 
+    # create record for this version
     a = AssetMetadata.objects.create(
         file_name=file_name,
         file_type=ctype,
         file_size=size_mb,
-        file_location=saved_rel_path,   # e.g., "video/Recording 2025-08-09 015726.mp4"
+        file_location=saved_rel_path,   # e.g., "image/1/mylogo.png"
         description=description,
         tags=tags,
         resolution=resolution,
         polygon_count=polygon_count,
         duration=duration_td,
+        no_of_versions=total_versions,
     )
+
+    # Update all rows for this file_name so they all show the same no_of_versions
+    AssetMetadata.objects.filter(file_name=file_name).update(no_of_versions=total_versions)
 
     return Response(_payload(a), status=201)
 
@@ -223,15 +247,57 @@ def update_asset(request, pk: int): # partial update of metadata
 @api_view(["GET"])
 @authentication_classes([])      # dev-open
 @permission_classes([AllowAny])  # dev-open
-def download(request, pk):
+def download(request, pk: int):
+    """
+    Download a file for the given AssetMetadata primary key.
+
+    Uses asset.file_location (relative path inside MEDIA_ROOT)
+    to locate the file on disk and streams it back as an attachment.
+    """
     from django.shortcuts import get_object_or_404
+
+    # 1) Find the asset in the database
     asset = get_object_or_404(AssetMetadata, pk=pk)
 
-    rel_path = asset.file_location or ""    # relative path in MEDIA_ROOT
-    full_path = os.path.join(settings.MEDIA_ROOT, rel_path.replace("/", os.sep))    # full path
-    if not os.path.exists(full_path):   # file missing
+    # 2) Get the stored relative path (e.g. "image/mylogo.png")
+    rel_path = (asset.file_location or "").strip()
+    if not rel_path:
+        return Response(
+            {"detail": "This asset has no file location set."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # 3) Normalise and block weird traversal
+    #    Turn backslashes into forward slashes, remove leading slash
+    rel_path = rel_path.replace("\\", "/").lstrip("/")
+
+    # Very simple safety check against "../" segments
+    parts = rel_path.split("/")
+    if ".." in parts:
+        return Response(
+            {"detail": "Invalid file path."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # 4) Build full absolute path: MEDIA_ROOT + relative path
+    full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+
+    if not os.path.exists(full_path):
+        # File missing on disk → 404
         raise Http404("File not found on server")
 
-    # browser will save to default downloads folder
-    return FileResponse(open(full_path, "rb"), as_attachment=True, filename=asset.file_name)
+    # 5) Guess a content-type for nicer downloads
+    ctype, _ = mimetypes.guess_type(full_path)
+    if not ctype:
+        ctype = "application/octet-stream"
 
+    # 6) Open and stream file as attachment (download)
+    file_name = asset.file_name or os.path.basename(full_path)
+    f = open(full_path, "rb")
+    response = FileResponse(
+        f,
+        as_attachment=True,
+        filename=file_name,
+        content_type=ctype,
+    )
+    return response
