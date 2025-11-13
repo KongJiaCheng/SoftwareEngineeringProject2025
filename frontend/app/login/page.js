@@ -27,7 +27,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/auth/token/', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -171,14 +171,6 @@ export default function LoginPage() {
             {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
-
-        {/* Test Credentials Hint */}
-        <div className="test-credentials">
-          <p><strong>Test Accounts:</strong></p>
-          <p>admin / admin123</p>
-          <p>editor1 / editor123</p>
-          <p>viewer1 / viewer123</p>
-        </div>
       </div>
 
       <style jsx>{`
@@ -307,24 +299,6 @@ export default function LoginPage() {
           opacity: 0.7;
           cursor: not-allowed;
           transform: none;
-        }
-
-        .test-credentials {
-          margin-top: 20px;
-          padding: 15px;
-          background: #f8f9fa;
-          border-radius: 10px;
-          border-left: 4px solid #667eea;
-          font-size: 12px;
-          color: #666;
-        }
-
-        .test-credentials p {
-          margin: 5px 0;
-        }
-
-        .test-credentials strong {
-          color: #333;
         }
 
         /* Toast Styles */
