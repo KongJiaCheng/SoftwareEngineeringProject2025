@@ -29,13 +29,16 @@ def _to_media_url(abs_or_rel_path: Path) -> str | None:
     return urljoin(settings.MEDIA_URL, rel.as_posix())
 
 class AssetPreviewViewSet(viewsets.ModelViewSet):
-    """
-    API for listing/retrieving AssetMetadata, and performing preview/download/version actions.
-    """
     queryset = AssetMetadata.objects.all().order_by("-modified_at", "-created_at")
     serializer_class = AssetMetadataLiteSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # default: protect everything
 
+    # ⬇ Public reads, private writes
+    def get_permissions(self):
+        public_actions = {"list", "retrieve", "preview", "download", "versions"}
+        if getattr(self, "action", None) in public_actions:
+            return [AllowAny()]
+        return [IsAuthenticated()]
     # Ensure basic info is up-to-date on list (file_size/file_type), then serialize
     def list(self, request, *args, **kwargs):
         media_root = Path(settings.MEDIA_ROOT)
