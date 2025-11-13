@@ -110,7 +110,7 @@ export default function EditPage() {
       <a href={asset.file_location} target="_blank" style={{ color: "#60a5fa" }}>
         {asset.file_location}
       </a>
-//////////////////////////
+
       {asset.file_type.startsWith("video") && (
         <>
           <label>Duration</label>

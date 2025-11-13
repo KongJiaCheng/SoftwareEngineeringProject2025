@@ -6,7 +6,6 @@ class AssetSerializer(serializers.ModelSerializer):
         model = AssetMetadata
         fields = "__all__"
         read_only_fields = (
-            "file_name",
             "file_type",
             "file_size",
             "file_location",
@@ -15,6 +14,7 @@ class AssetSerializer(serializers.ModelSerializer):
             "created_at",
             "modified_at",
             "modified_by",
+            "polygon_count",
         )
 
 

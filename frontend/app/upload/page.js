@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 export default function UploadPage() {
   const h = React.createElement;
 
-  // ---------- State ----------
+  // State
   const [files, setFiles] = useState([]);               // File objects chosen (not yet saved)
   const [error, setError] = useState("");
   const [progressMap, setProgressMap] = useState({});   // filename -> %
@@ -21,9 +21,27 @@ export default function UploadPage() {
 
   const inputRef = useRef(null);
   const dropRef = useRef(null);
+
+  const ALLOWED_MIME_PREFIX = ["image/", "video/"];
+  const ALLOWED_MIME_EXACT = ["model/gltf-binary", "model/gltf+json"]; 
+  const ALLOWED_EXT = [".glb",];
+
+  function fileExt(name = "") {
+    const i = name.lastIndexOf(".");
+    return i >= 0 ? name.slice(i).toLowerCase() : "";
+  }
+
+  function isAllowedFile(f) {
+    const t = String(f.type || "").toLowerCase();
+    const ext = fileExt(f.name);
+    if (ALLOWED_MIME_PREFIX.some(p => t.startsWith(p))) return true;           // image/* or video/*
+    if (ALLOWED_MIME_EXACT.includes(t)) return true;                            // proper glTF mimes
+    if (ALLOWED_EXT.includes(ext)) return true;                                 // .glb 
+    return false;
+  }
   
 
-  // ---------- Helpers ----------
+  // Helpers
   function updateProgress(filename, pct) {
     setProgressMap((prev) => ({ ...prev, [filename]: pct }));
   }
@@ -48,19 +66,24 @@ export default function UploadPage() {
   };
 
   // Build default edit object from a file + client probes
-  const primedFrom = (f) => {
-    const type = String(f.type || "").toLowerCase();
-    return {
-      file_name: f.name,
-      file_type: type,
-      file_size: f.size,
-      description: "",
-      tags: "[]",
-      resolution: resProbe[f.name] || "",   // auto (read-only)
-      duration: vidDur[f.name] || "",       // auto for videos (read-only)
-      polygon_count: "",                    // GLB optional (editable)
-    };
+ const primedFrom = (f) => {
+  const ext = fileExt(f.name);
+  const type = String(
+    f.type || (ext === ".glb" ? "model/gltf-binary" : ext === ".gltf" ? "model/gltf+json" : "")
+  ).toLowerCase();
+
+  return {
+    file_name: f.name,
+    file_type: type,
+    file_size: f.size,
+    description: "",
+    tags: "[]",
+    resolution: resProbe[f.name] || "",   // auto (read-only)
+    duration: vidDur[f.name] || "",       // auto for videos (read-only)
+    polygon_count: "",                    // GLB optional (editable)
   };
+};
+
 
   /** Predict save path immediately on pick/drop (mirrors backend date folders). */
   function predictForPickedFiles(fileList) {
@@ -146,54 +169,77 @@ export default function UploadPage() {
     });
   }
 
-  // ---------- Pick & DnD ----------
+  // Pick & DnD
   const onPick = useCallback((e) => {
-    const list = Array.from(e.target.files || []);
-    if (!list.length) return;
+    const picked = Array.from(e.target.files || []);
+    if (!picked.length) return;
+
+    const valid = picked.filter(isAllowedFile);
+    const rejected = picked.filter(f => !isAllowedFile(f));
+
+    if (rejected.length) {
+      alert(
+        "The following files were rejected (only images, videos, .glb, .gltf allowed):\n\n" +
+        rejected.map(f => "• " + f.name).join("\n")
+      );
+    }
+    if (!valid.length) {
+      // clear everything if nothing valid
+      setFiles([]); setLocalEdits({}); setProgressMap({}); setSaveBusy({});
+      setSaveOK({}); setPredictedInfo({}); setSavedInfo({}); setError("");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
 
     // reset UI state
-    setError("");
-    setProgressMap({});
-    setSaveBusy({});
-    setSaveOK({});
-    setPredictedInfo({});
-    setSavedInfo({});
+    setError(""); setProgressMap({}); setSaveBusy({}); setSaveOK({});
+    setPredictedInfo({}); setSavedInfo({});
 
-    // store files, predict, and probe
-    setFiles(list);
-    predictForPickedFiles(list);
-    probeMediaMeta(list);
+    // store valid files only
+    setFiles(valid);
+    predictForPickedFiles(valid);
+    probeMediaMeta(valid);
 
-    // init local edits
     const init = {};
-    list.forEach((f) => (init[f.name] = primedFrom(f)));
+    valid.forEach((f) => (init[f.name] = primedFrom(f)));
     setLocalEdits(init);
   }, [resProbe, vidDur]);
 
   const onDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const list = Array.from(e.dataTransfer?.files || []);
-    if (!list.length) return;
+    e.preventDefault(); e.stopPropagation();
+    const dropped = Array.from(e.dataTransfer?.files || []);
+    if (!dropped.length) return;
+
+    const valid = dropped.filter(isAllowedFile);
+    const rejected = dropped.filter(f => !isAllowedFile(f));
+
+    if (rejected.length) {
+      alert(
+        "The following files were rejected (only images, videos, .glb, .gltf allowed):\n\n" +
+        rejected.map(f => "• " + f.name).join("\n")
+      );
+    }
+    if (!valid.length) {
+      // clear everything if nothing valid
+      setFiles([]); setLocalEdits({}); setProgressMap({}); setSaveBusy({});
+      setSaveOK({}); setPredictedInfo({}); setSavedInfo({}); setError("");
+      return;
+    }
 
     // reset UI state
-    setError("");
-    setProgressMap({});
-    setSaveBusy({});
-    setSaveOK({});
-    setPredictedInfo({});
-    setSavedInfo({});
+    setError(""); setProgressMap({}); setSaveBusy({}); setSaveOK({});
+    setPredictedInfo({}); setSavedInfo({});
 
-    // store files, predict, and probe
-    setFiles(list);
-    predictForPickedFiles(list);
-    probeMediaMeta(list);
+    // store valid files only
+    setFiles(valid);
+    predictForPickedFiles(valid);
+    probeMediaMeta(valid);
 
-    // init local edits
     const init = {};
-    list.forEach((f) => (init[f.name] = primedFrom(f)));
+    valid.forEach((f) => (init[f.name] = primedFrom(f)));
     setLocalEdits(init);
   }, [resProbe, vidDur]);
+
 
   const onDragOver = useCallback((e) => {
     e.preventDefault();
@@ -232,13 +278,21 @@ export default function UploadPage() {
     });
   }, [resProbe, vidDur, files]);
 
-  // ---------- Per-file Save ----------
+  // Per-file Save
   async function saveOneNew(file) {
     const key = file.name;
     const meta = localEdits[key] || {};
 
     // Require a file name
     const finalName = (meta.file_name || "").trim() || file.name;
+    
+    // Validate file type
+    async function saveOneNew(file) {
+      if (!isAllowedFile(file)) {
+        alert("Unsupported file type. Only images, videos, .glb, or .gltf are allowed.");
+        throw new Error("Unsupported file type");
+      }
+    }
 
     const form = new FormData();
     // NOTE: keeping field name "file" to match your existing backend handler for this endpoint.
@@ -317,7 +371,7 @@ export default function UploadPage() {
       });
   }
 
-  // ---------- UI (no JSX) ----------
+  // UI
   function renderDropZone() {
     const styles = {
       border: "2px dashed #888",
@@ -414,6 +468,25 @@ export default function UploadPage() {
       h("h2", { style: { fontSize: 18, fontWeight: 700, color: "#e5e7eb", marginBottom: 12 } }, "Fill metadata, then Save"),
       ...files.map((f) => {
         const v = localEdits[f.name] || primedFrom(f);
+
+        const server = savedInfo[f.name] || {};
+        const ext = fileExt(f.name);
+
+        // File type: server > local > browser > by extension
+        const fileTypeValue =
+          server.file_type ||
+          v.file_type ||
+          f.type ||
+          (ext === ".glb" ? "model/gltf-binary" : ext === ".gltf" ? "model/gltf+json" : "");
+
+        // Resolution: server > local > probe
+        const resolutionValue =
+          server.resolution ?? v.resolution ?? resProbe[f.name] ?? "";
+
+        // Polygon count (GLB): server > local
+        const polygonValue =
+          server.polygon_count ?? v.polygon_count ?? "";
+
         const set = (k) => (e) => setLocalEdits((prev) => ({ ...prev, [f.name]: { ...prev[f.name], [k]: e.target.value } }));
         const t = String(v.file_type || f.type || "").toLowerCase();
 
@@ -453,7 +526,7 @@ export default function UploadPage() {
 
             // Read-only facts (to mimic your previous review card)
             fieldLabel("File type"),
-            h("input", { value: v.file_type || f.type || "", readOnly: true, style: roStyle }),
+            h("input", { value: fileTypeValue, readOnly: true, style: roStyle }),
 
             fieldLabel("File size"),
             h("input", { value: sizeHuman, readOnly: true, style: roStyle }),
@@ -462,7 +535,8 @@ export default function UploadPage() {
             h("input", { value: locationValue, readOnly: true, style: roStyle }),
 
             fieldLabel("Resolution (auto)"),
-            h("input", { value: v.resolution || resProbe[f.name] || "", readOnly: true, style: roStyle }),
+            h("input", { value: resolutionValue, readOnly: true, style: roStyle }),
+
 
             showDuration
               ? h(
@@ -477,20 +551,20 @@ export default function UploadPage() {
               ? h(
                   React.Fragment,
                   null,
-                  fieldLabel("Polygon count (GLB)"),
-                  h("input", { value: v.polygon_count || "", onChange: set("polygon_count"), style: inputStyle })
+                  fieldLabel("Polygon count (auto)"),
+                  h("input", { value: String(polygonValue || ""), readOnly: true, style: roStyle })
                 )
               : null
           ),
           h(
             "div",
-            { style: { marginTop: 12, display: "flex", gap: 8, alignItems: "center" } },
+            { style: { marginTop: 12, display: "flex", gap: 8, alignItems: "center" } },  // buttons row
             h(
-              "button",
+              "button", // Save button
               { type: "button", onClick: () => saveOneNew(f), disabled: !!saveBusy[f.name], style: btnPrimaryStyle(!saveBusy[f.name]) },
               saveBusy[f.name] ? "Saving…" : "Save"
             ),
-            saveOK[f.name] ? h("span", { style: { color: "#22c55e" } }, "Saved ✓") : null,
+            saveOK[f.name] ? h("span", { style: { color: "#22c55e" } }, "Saved ✓", (setTimeout(() => (window.location.href = "/main"), 1000))) : null,
             h("span", { style: { marginLeft: "auto", fontVariantNumeric: "tabular-nums" } }, (progressMap[f.name] || 0) + "%")
           )
         );
@@ -549,12 +623,11 @@ export default function UploadPage() {
     );
   }
 
-  // ---------- Main ----------
+  // Main
   return h(
   "main",
   { style: { maxWidth: 900, margin: "24px auto", padding: "0 16px", color: "#e5e7eb" } },
 
-  // === ⬆️ Add navigation button to main page ===
   h(
     "div",
     { style: { display: "flex", justifyContent: "flex-start", marginBottom: 16 } },
@@ -578,7 +651,7 @@ export default function UploadPage() {
   ),
 
 
-  // === Existing content ===
+  // Existing content
   h("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 8 } }, "Upload files"),
 
     h("p", { style: { margin: 0, opacity: 0.8 } }, "Pick files, edit metadata, then press Save on each card to create them."),
@@ -589,6 +662,7 @@ export default function UploadPage() {
       type: "file",
       multiple: true,
       style: { display: "none" },
+      accept: "image/*,video/*,.glb",
       onChange: onPick,
     }),
 
@@ -606,7 +680,7 @@ export default function UploadPage() {
   );
 }
 
-// --------- tiny helpers
+// tiny helpers
 function btnStyle(enabled) {
   return {
     padding: "10px 14px",
