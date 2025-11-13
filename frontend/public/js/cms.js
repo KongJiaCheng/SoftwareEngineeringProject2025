@@ -40,17 +40,20 @@ export function initCMS() {
       list: '/api/asset_preview', // Next.js route -> Django /api/preview/assets/
       detail: (id) => `/api/asset_preview?id=${id}`,
       preview: (id) => `/api/preview/assets/${id}/preview/`,
-      download: (id) => `/api/upload?download=1&id=${id}`,
+      download: (id) => `http://127.0.0.1:8000/api/download/${id}/`,
       versions: (id) => `/api/preview/assets/${id}/versions/`,
       createVersion: (id) => `/api/preview/assets/${id}/create_version/`,
       credentials: 'include',
     };
 
-    // 🔑 Serve media from Django: set to '/media/' if you rewrote it in next.config.js,
-    // or set absolute 'http://127.0.0.1:8000/media/' if you don't proxy.
-    const MEDIA_BASE =
-      document.querySelector('meta[name="media-url"]')?.content ||
-      '/media/';
+    // // 🔑 Serve media from Django: set to '/media/' if you rewrote it in next.config.js,
+    // // or set absolute 'http://127.0.0.1:8000/media/' if you don't proxy.
+    // const MEDIA_BASE =
+    //   document.querySelector('meta[name="media-url"]')?.content ||
+    //   '/media/';
+    // For local dev: always load real files from Django dev server
+    const MEDIA_BASE = 'http://127.0.0.1:8000/media/';
+
 
     // === Styles ===
     injectCSS(`
@@ -212,14 +215,15 @@ export function initCMS() {
 
     // === Actions ===
     function doDownload(asset) {
-      const url = API.download(asset.id);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = asset.name || true;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
+    const url = API.download(asset.id);
+    const a = document.createElement("a");
+    a.href = url;          // now goes straight to Django 8000
+    a.download = asset.name || true;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
 
 
     async function doDelete(asset) {
