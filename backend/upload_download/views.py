@@ -196,7 +196,7 @@ def upload(request):
     # 🔹 resolution:
     #  - image  -> width x height
     #  - glb    -> bboxX x bboxY x bboxZ
-    #  - video  -> (optional, currently blank)
+    #  - video  -> (optional)
     resolution = (resolution_in.strip() if resolution_in else "")
     if not resolution and is_image:
         resolution = asset_resolution(full_path) or None
@@ -287,15 +287,9 @@ def update_asset(request, pk: int): # partial update of metadata
 
 
 @api_view(["GET"])
-@authentication_classes([])      # dev-open
-@permission_classes([AllowAny])  # dev-open
+@authentication_classes([]) # dev-open
+@permission_classes([AllowAny]) # dev-open
 def download(request, pk: int):
-    """
-    Download a file for the given AssetMetadata primary key.
-
-    Uses asset.file_location (relative path inside MEDIA_ROOT)
-    to locate the file on disk and streams it back as an attachment.
-    """
     from django.shortcuts import get_object_or_404
 
     # 1) Find the asset in the database
@@ -323,7 +317,6 @@ def download(request, pk: int):
 
     # 4) Build full absolute path: MEDIA_ROOT + relative path
     full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
-
     if not os.path.exists(full_path):
         # File missing on disk → 404
         raise Http404("File not found on server")
