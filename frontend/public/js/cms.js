@@ -310,7 +310,7 @@ export function initCMS() {
       // Actions
       const actions = el('div', { class:'row' }, [
         el("button",{class:"btn",onclick:e=>{e.stopPropagation();window.location.href=`/edit/${data.id}`}},["Edit"]),
-        el("button",{class:"btn",onclick:e=>{e.stopPropagation();doDownload(data)}},["Download"]),
+        el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doDownload(data);} }, ['Download']),
         el('button', { class:'btn', onclick: ()=>modal.remove() }, ['Close']),
       ]);
       right.appendChild(actions);

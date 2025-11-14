@@ -1,5 +1,6 @@
 # upload_download/views.py
 import os, mimetypes
+import trimesh
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
@@ -15,7 +16,37 @@ from asset_metadata.models import AssetMetadata
 from .serializers import AssetSerializer
 
 
-def _img_resolution(full_path: str):
+def glb_polygon_count(full_path: str):
+    try:
+        m = trimesh.load(full_path, force="mesh")
+        if hasattr(m, "faces"):
+            return int(len(m.faces))
+        # GLB with multiple meshes
+        if hasattr(m, "geometry"):
+            total = 0
+            for g in m.geometry.values():
+                if hasattr(g, "faces"):
+                    total += len(g.faces)
+            return int(total)
+    except Exception as e:
+        print("GLB polygon count error:", e)
+    return None
+
+
+# 🔹 NEW: use bounding box to create a “3D resolution” string for GLB
+def glb_bbox_resolution(full_path: str):
+    try:
+        m = trimesh.load(full_path, force="mesh")
+        if hasattr(m, "bounding_box"):
+            ext = m.bounding_box.extents  # [x, y, z]
+            # format like: "148.0x5.6x140.5"
+            return f"{ext[0]:.1f}x{ext[1]:.1f}x{ext[2]:.1f}"
+    except Exception as e:
+        print("GLB bbox resolution error:", e)
+    return ""
+
+
+def asset_resolution(full_path: str):
     try:
         with Image.open(full_path) as im:
             return f"{int(im.width)}x{int(im.height)}"
@@ -24,9 +55,9 @@ def _img_resolution(full_path: str):
 
 
 def _to_timedelta(value):
-    if value is None or value == "": # blank
+    if value is None or value == "":  # blank
         return None
-    if isinstance(value, (int, float)): # numeric
+    if isinstance(value, (int, float)):  # numeric
         return timedelta(seconds=float(value))
     if isinstance(value, str):  # string
         s = value.strip()
@@ -96,7 +127,7 @@ def upload(request):
         except Exception:
             tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
 
-    # polygon_count normalize
+    # polygon_count normalize (client value, will be overridden for GLB)
     if polygon_count_raw is None or str(polygon_count_raw).strip() == "":
         polygon_count = None
     else:
@@ -132,7 +163,6 @@ def upload(request):
         )
 
     # === VERSIONING LOGIC ===
-    # Look for existing assets with the same file_name AND real files on disk
     existing_qs = AssetMetadata.objects.filter(file_name=file_name)
     existing_valid = []
     for a in existing_qs:
@@ -148,7 +178,6 @@ def upload(request):
     total_versions = new_version_index            # total number of versions for this name
 
     # store file as: <type>/<version>/filename
-    # e.g. MEDIA_ROOT/image/1/mylogo.png
     versioned_subdir = os.path.join(base_subdir, str(new_version_index))
     target_dir = os.path.join(settings.MEDIA_ROOT, versioned_subdir)
     os.makedirs(target_dir, exist_ok=True)
@@ -158,10 +187,22 @@ def upload(request):
     saved_rel_path = os.path.join(versioned_subdir, saved_name).replace("\\", "/")
     full_path = os.path.join(settings.MEDIA_ROOT, saved_rel_path.replace("/", os.sep))
 
-    # resolution (prefer client value; else compute for images)
+    # 🔹 auto polygon count for .glb
+    if is_glb:
+        auto_poly = glb_polygon_count(full_path)
+        if auto_poly is not None:
+            polygon_count = auto_poly
+
+    # 🔹 resolution:
+    #  - image  -> width x height
+    #  - glb    -> bboxX x bboxY x bboxZ
+    #  - video  -> (optional, currently blank)
     resolution = (resolution_in.strip() if resolution_in else "")
-    if not resolution and ctype.startswith("image/"):
-        resolution = _img_resolution(full_path) or None
+    if not resolution and is_image:
+        resolution = asset_resolution(full_path) or None
+    elif not resolution and is_glb:
+        res3d = glb_bbox_resolution(full_path)
+        resolution = res3d or None
     elif not resolution:
         resolution = None
 
@@ -186,6 +227,7 @@ def upload(request):
     AssetMetadata.objects.filter(file_name=file_name).update(no_of_versions=total_versions)
 
     return Response(_payload(a), status=201)
+
 
 
 
