@@ -49,7 +49,7 @@ cd frontend
 ```
 ```bash
 #install dependencies
-npm install @chakra-ui/react @chakra-ui/system @emotion/react @emotion/styled framer-motion bcryptjs
+npm install three "@loaders.gl/core" "@loaders.gl/gltf" "@chakra-ui/react" "@chakra-ui/system" "@emotion/react" "@emotion/styled" framer-motion bcryptjs
 #run development server
 npm run dev
 ```

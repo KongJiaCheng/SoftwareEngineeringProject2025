@@ -5,7 +5,7 @@ from .models import UploadAsset
 
 @admin.register(UploadAsset)
 class UploadAssetAdmin(admin.ModelAdmin):
-    list_display = ("file_name", "file_type", "file_size", "download_link", "modified_at")
+    list_display = ("file_name", "file_type", "file_size","file_location", "download_link", "modified_at")
     search_fields = ("file_name", "description", "tags")
     list_filter = ("file_type",)
     readonly_fields = (

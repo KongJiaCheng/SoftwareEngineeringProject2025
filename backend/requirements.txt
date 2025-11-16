@@ -1,11 +1,13 @@
 # requirements.txt for installing necessary dependencies
-Django==5.2.7
-djangorestframework==3.16.1
-django-cors-headers==4.6.0
+Django
+djangorestframework
+django-cors-headers
 psycopg[binary]
-Pillow==10.4.0
-moviepy==2.2.1
-imageio==2.37.0
-imageio-ffmpeg==0.6.0
+Pillow
+moviepy
+imageio
+imageio-ffmpeg
 trimesh
-numpy==2.2.1
+numpy
+shapely
+rtree

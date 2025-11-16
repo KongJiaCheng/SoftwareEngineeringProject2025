@@ -1,5 +1,13 @@
 {
+<<<<<<< HEAD
   "/api/asset_preview/route": "app/api/asset_preview/route.js",
   "/main/page": "app/main/page.js",
   "/edit/[id]/page": "app/edit/[id]/page.js"
+=======
+  "/api/upload_download/route": "app/api/upload_download/route.js",
+  "/api/asset_preview/route": "app/api/asset_preview/route.js",
+  "/main/page": "app/main/page.js",
+  "/login/page": "app/login/page.js",
+  "/upload/page": "app/upload/page.js"
+>>>>>>> origin/main
 }
