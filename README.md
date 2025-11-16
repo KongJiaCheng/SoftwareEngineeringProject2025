@@ -54,7 +54,12 @@ npm install three "@loaders.gl/core" "@loaders.gl/gltf" "@chakra-ui/react" "@cha
 npm run dev
 ```
 
-Extra for clearing cache
+Extra (option)
+Create superuser (id django administrator cannot login)
+```bash
+python manage.py createsuperuser
+```
+Clearing cache
 ```bash
 # Remove cached Python bytecode
 git rm -r --cached **/_pycache_/
