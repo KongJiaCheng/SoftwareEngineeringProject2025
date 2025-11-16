@@ -14,6 +14,37 @@ export default function EditPage() {
     return m ? decodeURIComponent(m[1]) : "";
   }
 
+  // ---- helper: normalise tags from API into array of strings ----
+  function normaliseTags(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+      return raw.map((t) => String(t)).filter(Boolean);
+    }
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed) return [];
+      // try JSON array first
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map((t) => String(t)).filter(Boolean);
+        }
+      } catch {
+        // ignore JSON error, fall back to comma list
+      }
+      // fallback: comma / newline separated
+      return trimmed
+        .split(/[,\n]/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+    }
+    // anything else: stringify & split by commas
+    return String(raw)
+      .split(/[,\n]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+
   // Fetch one asset via Next.js proxy route
   useEffect(() => {
     if (!id) return;
@@ -22,27 +53,18 @@ export default function EditPage() {
       .then((data) => {
         console.log("Loaded asset from API:", data);
 
-        // normalise tags to something editable
-        let tagText = "[]";
-        if (Array.isArray(data.tags)) {
-          // JSONField as list
-          tagText = JSON.stringify(data.tags, null, 2);
-        } else if (typeof data.tags === "string") {
-          tagText = data.tags;
-        } else if (data.tags != null) {
-          tagText = JSON.stringify(data.tags, null, 2);
-        }
+        const tagsArray = normaliseTags(data.tags);
 
         setAsset({
           id: data.id,
           file_name: data.file_name || "",
           description: data.description || "",
-          tags: tagText,
+          tags: tagsArray,         // <--- array of strings
+          tagInput: "",            // <--- buffer for input box
           file_type: data.file_type || "",
           file_size:
             typeof data.file_size === "number" ? data.file_size : 0, // MB
           file_location: data.file_location || "",
-          // NOTE: keep whatever DRF sends (usually "HH:MM:SS" or "DD HH:MM:SS")
           duration: data.duration || "",
           polygon_count: data.polygon_count ?? "",
           resolution: data.resolution || "",
@@ -55,51 +77,54 @@ export default function EditPage() {
     setAsset((prev) => ({ ...prev, [field]: value }));
   }
 
+  // ---- TAG HANDLERS (same behaviour as upload page) ----
+  function handleTagInputChange(e) {
+    update("tagInput", e.target.value);
+  }
+
+  function handleAddTag() {
+    if (!asset) return;
+    const newTag = (asset.tagInput || "").trim();
+    if (!newTag) return;
+
+    setAsset((prev) => {
+      const currentTags = (prev.tags || []).map((t) => String(t));
+      if (currentTags.includes(newTag)) {
+        // no duplicates; just clear input
+        return { ...prev, tagInput: "" };
+      }
+      return {
+        ...prev,
+        tags: [...currentTags, newTag],
+        tagInput: "",
+      };
+    });
+  }
+
+  function handleRemoveTag(tag, idx) {
+    setAsset((prev) => {
+      const currentTags = (prev.tags || []).map((t) => String(t));
+      const nextTags = currentTags.filter(
+        (tVal, i) => !(tVal === tag && i === idx)
+      );
+      return { ...prev, tags: nextTags };
+    });
+  }
+
   async function save() {
     if (!asset) return;
     setBusy(true);
     try {
-      // --------- TAG PARSING ----------
-      let tagsArray = [];
-      const raw = (asset.tags || "").trim();
-
-      if (!raw) {
-        tagsArray = [];
-      } else {
-        let parsed = null;
-        let parsedAsJson = false;
-
-        // 1) Try JSON.parse
-        try {
-          parsed = JSON.parse(raw);
-          parsedAsJson = true;
-        } catch {
-          parsedAsJson = false;
-        }
-
-        if (parsedAsJson && Array.isArray(parsed)) {
-          tagsArray = parsed.map((t) => String(t).trim()).filter(Boolean);
-        } else if (parsedAsJson && !Array.isArray(parsed)) {
-          alert(
-            '❌ Tags JSON must be an array, e.g. ["car","3d","black"].\nCurrently it is a JSON value that is not an array.'
-          );
-          setBusy(false);
-          return;
-        } else {
-          // 2) Not valid JSON → treat as comma list
-          tagsArray = raw
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean);
-        }
-      }
-      // --------- END TAG PARSING ----------
+      // ensure tags is a clean string array
+      const tagsArray = (asset.tags || [])
+        .map((t) => String(t).trim())
+        .filter(Boolean);
 
       const body = {
         file_name: asset.file_name,
         description: asset.description || "",
-        tags: tagsArray,                        // <--- final array
-        duration: asset.duration || null,       // <--- string or null
+        tags: tagsArray, // <--- final array sent to backend
+        duration: asset.duration || null,
         polygon_count:
           asset.polygon_count === "" || asset.polygon_count == null
             ? null
@@ -119,7 +144,7 @@ export default function EditPage() {
       });
 
       if (!r.ok) throw new Error(`Save failed: ${r.status} ${await r.text()}`);
-      alert("✅ Updated successfully");
+      //alert("✅ Updated successfully");
       window.location.href = "/main"; // go back to main page
     } catch (e) {
       alert("❌ Failed to update: " + e.message);
@@ -130,27 +155,33 @@ export default function EditPage() {
 
   async function remove() {
     if (!confirm("Delete this asset?")) return;
-    setBusy(true);
-    try {
-      const r = await fetch(`/api/asset_edit/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: { "x-csrftoken": getCSRFCookie() },
-      });
-      if (r.status !== 204 && r.status !== 200) {
-        throw new Error(`Delete failed: ${r.status} ${await r.text()}`);
-      }
-      alert("🗑️ Deleted successfully");
+
+    fetch(`/api/asset_edit/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "content-type": "application/json",
+        "x-csrftoken": getCSRFCookie(),
+      },
+      body: JSON.stringify({ _delete: true }),
+    }).catch(() => {});
+
+    // short delay (optional)
+    setTimeout(() => {
       window.location.href = "/main";
-    } catch (e) {
-      alert("❌ Failed to delete: " + e.message);
-    } finally {
-      setBusy(false);
-    }
+    }, 200);
   }
+
+
+
+
+
+
 
   if (loading) return <p style={{ color: "#e5e7eb" }}>Loading...</p>;
   if (!asset) return <p style={{ color: "#f97373" }}>Not found</p>;
+
+  const tagsArray = asset.tags || [];
 
   return (
     <main style={pageStyle}>
@@ -182,14 +213,93 @@ export default function EditPage() {
           style={area}
         />
 
-        <label style={labelStyle}>
-          Tags (JSON array or comma list, e.g. ["car","3d"] or car, 3d)
-        </label>
-        <textarea
-          value={asset.tags}
-          onChange={(e) => update("tags", e.target.value)}
-          style={area}
-        />
+        {/* ⭐ NEW TAG UI (similar to upload page) */}
+        <label style={labelStyle}>Tags</label>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            marginBottom: 8,
+          }}
+        >
+          <input
+            value={asset.tagInput || ""}
+            onChange={handleTagInputChange}
+            style={{ ...input, marginBottom: 0 }}
+            placeholder="Type a tag and click Add"
+          />
+          <button
+            type="button"
+            onClick={handleAddTag}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 8,
+              border: "1px solid #30363d",
+              background: "#111827",
+              color: "#e5e7eb",
+              cursor: "pointer",
+              fontWeight: 500,
+            }}
+          >
+            Add
+          </button>
+        </div>
+
+        {tagsArray.length ? (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginBottom: 16,
+            }}
+          >
+            {tagsArray.map((tag, idx) => (
+              <span
+                key={tag + idx}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 8px",
+                  borderRadius: 9999,
+                  border: "1px solid #4b5563",
+                  background: "#111827",
+                  color: "#ffffff",
+                  fontSize: 12,
+                }}
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTag(tag, idx)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "#fca5a5",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    lineHeight: 1,
+                    padding: 0,
+                  }}
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div
+            style={{
+              fontSize: 12,
+              color: "#9ca3af",
+              marginBottom: 16,
+            }}
+          >
+            No tags yet. Add one above.
+          </div>
+        )}
 
         <label style={labelStyle}>Current File</label>
         <a
@@ -200,32 +310,6 @@ export default function EditPage() {
         >
           {asset.file_location || "(no path)"}
         </a>
-
-        {/* {asset.file_type.startsWith("video") && (
-          <>
-            <label style={labelStyle}>
-              Duration (HH:MM:SS, e.g. 00:00:10 – value from DB)
-            </label>
-            <input
-              value={asset.duration || ""}
-              onChange={(e) => update("duration", e.target.value)}
-              style={input}
-              placeholder="00:00:10"
-            />
-          </>
-        )} */}
-
-        {/* {asset.file_type === "model/glb" ||
-        asset.file_name.toLowerCase().endsWith(".glb") ? (
-          <>
-            <label style={labelStyle}>Polygon Count</label>
-            <input
-              value={asset.polygon_count}
-              onChange={(e) => update("polygon_count", e.target.value)}
-              style={input}
-            />
-          </>
-        ) : null} */}
 
         <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
           <div style={{ flex: 1 }}>
@@ -251,7 +335,7 @@ export default function EditPage() {
   );
 }
 
-// === Styles (dark "ModelVerse" look) ===
+// === Styles (same as your current file) ===
 
 const pageStyle = {
   minHeight: "100vh",
