@@ -229,61 +229,99 @@ def upload(request):
     return Response(_payload(a), status=201)
 
 
-
-
+def _remove_physical_file(asset):
+    rel = (asset.file_location or "").strip()
+    if not rel:
+        return False
+    full = os.path.join(settings.MEDIA_ROOT, rel.replace("/", os.sep))
+    if os.path.exists(full):
+        try:
+            os.remove(full)
+            return True
+        except Exception as e:
+            # log if you want
+            print("File delete error:", e)
+    return False
 
 @api_view(["PATCH"])
-@authentication_classes([]) # dev-open
-@permission_classes([AllowAny]) # dev-open
-def update_asset(request, pk: int): # partial update of metadata
+@authentication_classes([])      # dev-open
+@permission_classes([AllowAny])  # dev-open
+def update_asset(request, pk: int):
     try:
-        asset = AssetMetadata.objects.get(pk=pk)    # get existing
+        asset = AssetMetadata.objects.get(pk=pk)
     except AssetMetadata.DoesNotExist:
         return Response({"detail": "Not found."}, status=404)
 
-    data = JSONParser().parse(request)
+    data = JSONParser().parse(request) if request.body else {}
 
-    # Normalize tags (array or comma string)
-    if "tags" in data and isinstance(data["tags"], str):
-        import json
-        try:
-            data["tags"] = json.loads(data["tags"])
-        except Exception:
-            data["tags"] = [t.strip() for t in data["tags"].split(",") if t.strip()]
+    # --- DELETE via PATCH flag ---
+    if data.get("_delete") is True:
+        rel = (asset.file_location or "").strip()
+        if rel:
+            full = os.path.join(settings.MEDIA_ROOT, rel.replace("/", os.sep))
+            if os.path.exists(full):
+                try:
+                    os.remove(full)
+                except Exception as e:
+                    print("File delete error:", e)
 
-    # Coerce blanks -> valid values
-    for k in ("description", "resolution"):
-        if k in data and data[k] == "":
-            # description must not be NULL in DB, keep empty string
-            data[k] = "" if k == "description" else None
+        asset.delete()
+        return Response(status=204)
 
-    # Coerce duration (DurationField)
-    if "duration" in data:
-        data["duration"] = _to_timedelta(data["duration"])
+    # --- Normalise tags (string -> list) ---
+    tags_in = data.get("tags")
+    if isinstance(tags_in, str):
+        tags = [t.strip() for t in tags_in.split(",") if t.strip()]
+        data["tags"] = tags
 
-    # Coerce polygon_count to int or None
-    if "polygon_count" in data:
-        val = data["polygon_count"]
-        if val is None or str(val).strip() == "":
-            data["polygon_count"] = None
-        else:
-            try:
-                data["polygon_count"] = int(str(val).strip())
-            except ValueError:
-                data["polygon_count"] = None  # or raise ValidationError
+    # ---------- NEW: rename physical file if file_name changed ----------
+    new_file_name = data.get("file_name")
+    if new_file_name:
+        new_file_name = new_file_name.strip()
+        old_file_name = (asset.file_name or "").strip()
 
-    # Allow the fields you actually want editable
-    allowed_keys = {"file_name", "description", "tags"}
-    clean = {k: v for k, v in data.items() if k in allowed_keys}
+        if new_file_name and new_file_name != old_file_name:
+            rel = (asset.file_location or "").strip()
+            if rel:
+                # current full path
+                old_full = os.path.join(
+                    settings.MEDIA_ROOT,
+                    rel.replace("/", os.sep)
+                )
+                folder = os.path.dirname(old_full)
 
-    ser = AssetSerializer(asset, data=clean, partial=True)
-    if not ser.is_valid():
-        return Response(ser.errors, status=400)
-    ser.save()
+                # keep / adjust extension
+                _, old_ext = os.path.splitext(old_full)
+                base_new, ext_new = os.path.splitext(new_file_name)
+                if not ext_new:
+                    ext_new = old_ext
+                new_basename = base_new + ext_new
 
-    asset.refresh_from_db()
-    return Response(_payload(asset), status=200)
+                new_full = os.path.join(folder, new_basename)
 
+                try:
+                    os.rename(old_full, new_full)
+
+                    # update file_location on the model (bypass serializer)
+                    rel_dir = os.path.dirname(rel).replace("\\", "/")
+                    if rel_dir:
+                        asset.file_location = f"{rel_dir}/{new_basename}"
+                    else:
+                        asset.file_location = new_basename
+                except Exception as e:
+                    print("File rename error:", e)
+    # -------------------------------------------------------------------
+
+    # only allow specific fields through serializer
+    allowed_keys = ["file_name", "description", "tags"]
+    cleaned = {k: v for k, v in data.items() if k in allowed_keys}
+
+    serializer = AssetSerializer(asset, data=cleaned, partial=True)
+    if serializer.is_valid():
+        serializer.save()  # uses updated asset.file_location from above
+        return Response(serializer.data)
+
+    return Response(serializer.errors, status=400)
 
 
 @api_view(["GET"])
@@ -336,3 +374,4 @@ def download(request, pk: int):
         content_type=ctype,
     )
     return response
+

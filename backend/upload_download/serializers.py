@@ -2,6 +2,11 @@ from rest_framework import serializers
 from asset_metadata.models import AssetMetadata
 
 class AssetSerializer(serializers.ModelSerializer):
+    # ensure tags is always a list of strings
+    tags = serializers.ListField(
+        child=serializers.CharField(allow_blank=False),
+        required=False
+    )
     class Meta:
         model = AssetMetadata
         fields = "__all__"
@@ -16,6 +21,7 @@ class AssetSerializer(serializers.ModelSerializer):
             "modified_by",
             "polygon_count",
         )
+        
 
 
     def validate(self, attrs):

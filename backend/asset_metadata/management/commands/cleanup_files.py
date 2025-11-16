@@ -1,28 +1,3 @@
-'''
-from django.core.management.base import BaseCommand
-from asset_metadata.models import AssetMetadata
-import os
-from django.conf import settings
-
-class Command(BaseCommand):
-    help = "Delete database entries whose files are missing in MEDIA_ROOT"
-
-    def handle(self, *args, **kwargs):
-        deleted_count = 0
-
-        for asset in AssetMetadata.objects.all():
-            # Use the correct model field
-            file_path = os.path.join(settings.MEDIA_ROOT, asset.file_name)
-
-            if not os.path.exists(file_path):
-                asset.delete()
-                deleted_count += 1
-                self.stdout.write(f"Deleted DB record for missing file: {file_path}")
-
-        self.stdout.write(f"Cleanup completed. Total deleted records: {deleted_count}")
-
-'''
-
 from django.core.management.base import BaseCommand
 from asset_metadata.models import AssetMetadata
 import os

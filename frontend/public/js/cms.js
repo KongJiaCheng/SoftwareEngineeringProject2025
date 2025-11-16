@@ -205,7 +205,7 @@ export function initCMS() {
           (data.tags || []).map(t => el('div', { class: 'cms-tag' }, [t]))
         ),
         el('div', { style: 'display:flex;gap:10px;margin-top:6px;' }, [
-          el("button",{class:"btn",onclick:e=>{e.stopPropagation();window.location.href=`/edit/${data.id}`}},["Edit"])
+          el('button', { class: 'btn', onclick: (e) => { e.stopPropagation(); window.location.href = `/edit/${data.id}`; } }, ['Edit']),
         ]),
         el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doDownload(data);} }, ['Download'])
       );
@@ -309,7 +309,7 @@ export function initCMS() {
 
       // Actions
       const actions = el('div', { class:'row' }, [
-        el("button",{class:"btn",onclick:e=>{e.stopPropagation();window.location.href=`/edit/${data.id}`}},["Edit"]),
+        el('button', { class: 'btn', onclick: () => { window.location.href = `/edit/${asset.id}`; } }, ['Edit']),
         el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doDownload(data);} }, ['Download']),
         el('button', { class:'btn', onclick: ()=>modal.remove() }, ['Close']),
       ]);
