@@ -54,6 +54,26 @@ npm install three "@loaders.gl/core" "@loaders.gl/gltf" "@chakra-ui/react" "@cha
 npm run dev
 ```
 
+Extra for clearing cache
+```bash
+# Remove cached Python bytecode
+git rm -r --cached **/_pycache_/
+git rm -r --cached *.pyc
+
+# Remove Next.js build folders and dependencies
+git rm -r --cached .next/
+git rm -r --cached node_modules/
+git rm -r --cached dist/
+
+# Remove Django migration files (optional – only if you want to regenerate migrations)
+git rm -r --cached **/migrations/
+
+# Commit and push cleanup
+git commit -m "Remove cached build, pycache, pyc, node_modules, dist, and migrations"
+git push
+```
+
+Frontend
 First, run the development server:
 
 ```bash (used Everytime to run frontend)
