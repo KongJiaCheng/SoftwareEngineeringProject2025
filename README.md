@@ -47,6 +47,8 @@ If virtual environment not running(usually because placed in desktop or download
 {NOTE: THIS IS ONLY A TEMPORARY FIX!!!!!}
 ```bash
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+
 ```
 Create superuser (id django administrator cannot login)
 ```bash
