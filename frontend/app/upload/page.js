@@ -36,6 +36,16 @@ function parseTags(value) {
   return [];
 }
 
+function detectBaseSubdir(file) {
+  const type = (file.type || "").toLowerCase();
+  const ext = fileExt(file.name);
+
+  if (type.startsWith("image/")) return "image";
+  if (type.startsWith("video/")) return "video";
+  if (type.includes("gltf") || ext === ".glb" || ext === ".gltf") return "model";
+  return "other";
+}
+
 // tiny helpers
 function btnStyle(enabled) {
   return {
@@ -62,7 +72,6 @@ function btnPrimaryStyle(enabled) {
 
 export default function UploadPage() {
   const h = React.createElement;
-  
 
   // State
   const [files, setFiles] = useState([]); // File objects chosen (not yet saved)
@@ -73,6 +82,7 @@ export default function UploadPage() {
   const [saveOK, setSaveOK] = useState({}); // filename -> true
   const [predictedInfo, setPredictedInfo] = useState({}); // { "original.ext": { rel, url } } (shown immediately)
   const [savedInfo, setSavedInfo] = useState({}); // { "original.ext": serverRow } (shown after save)
+  const [existingVersions, setExistingVersions] = useState({}); // { "shiba.glb": 3, ... }
 
   // Client-probed metadata by ORIGINAL filename (before save)
   const [vidDur, setVidDur] = useState({}); // { "name.mp4": seconds }
@@ -81,7 +91,7 @@ export default function UploadPage() {
   const inputRef = useRef(null);
   const dropRef = useRef(null);
 
-  // NEW: GLTF loader instance (only on client)
+  // GLTF loader instance (only on client)
   const gltfLoaderRef = useRef(null);
   useEffect(() => {
     gltfLoaderRef.current = new GLTFLoader();
@@ -156,45 +166,37 @@ export default function UploadPage() {
   };
 
   /** Predict save path immediately on pick/drop (mirrors backend date folders). */
-  function predictForPickedFiles(fileList) {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const dir = `uploads/${yyyy}/${mm}/${dd}`; // adjust if your backend folder differs
+  const predictForPickedFiles = useCallback(
+    (fileList) => {
+      const nextPred = {};
+      Array.from(fileList).forEach((f) => {
+        // Use same default file_name as saveOneNew (primedFrom)
+        const meta = primedFrom(f);
+        const logicalName = (meta.file_name || "").trim() || f.name;
 
-    function slugifyBase(name) {
-      return (
-        name
-          .toLowerCase()
-          .replace(/\.[^.]+$/, "") // drop extension
-          .replace(/[^a-z0-9]+/g, "-") // non-alnum -> hyphen
-          .replace(/^-+|-+$/g, "") // trim hyphens
-          .slice(0, 48) || "file"
-      );
-    }
+        const baseSubdir = detectBaseSubdir(f);
 
-    function shortId(n = 7) {
-      const chars =
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      let out = "";
-      for (let i = 0; i < n; i++) out += chars[(Math.random() * chars.length) | 0];
-      return out;
-    }
+        // how many versions DB says we already have for this name
+        const existing = existingVersions[logicalName] || 0;
+        const guessVersion = existing + 1;
 
-    const next = {};
-    Array.from(fileList).forEach((f) => {
-      const ext = (f.name.includes(".") ? f.name.split(".").pop() : "").toLowerCase();
-      const base = slugifyBase(f.name);
-      const finalName = ext
-        ? `${base}_${shortId()}.${ext}`
-        : `${base}_${shortId()}`;
-      const rel = `${dir}/${finalName}`;
-      next[f.name] = { rel, url: `/media/${rel}` }; // change /media if your MEDIA_URL differs
-    });
+        const rel = `${baseSubdir}/${guessVersion}/${logicalName}`;
+        nextPred[f.name] = {
+          rel,
+          url: `/media/${rel}`, // keep in sync with MEDIA_URL
+        };
+      });
 
-    setPredictedInfo((prev) => ({ ...prev, ...next }));
-  }
+      setPredictedInfo((prev) => ({ ...prev, ...nextPred }));
+    },
+    [existingVersions]
+  );
+
+  useEffect(() => {
+    if (!files.length) return;
+    // Rebuilded predictions with better version guesses
+    predictForPickedFiles(files);
+  }, [existingVersions, files, predictForPickedFiles]);
 
   // NEW: probe GLB locally (resolution + polygon count)
   function probeGlbMeta(file, url) {
@@ -435,30 +437,31 @@ export default function UploadPage() {
 
   // Keep localEdits in sync when async probes finish (images/videos)
   useEffect(() => {
-    if (!files.length) return;
-    setLocalEdits((prev) => {
-      const next = { ...prev };
-      files.forEach((f) => {
-        const name = f.name;
-        const cur = next[name] || {};
-        // If resolution empty but probe arrived, set it
-        if (
-          (!cur.resolution || String(cur.resolution).trim() === "") &&
-          resProbe[name]
-        ) {
-          next[name] = { ...cur, resolution: resProbe[name] };
-        }
-        // If duration empty but video probe arrived, set it
-        if (
-          (!cur.duration || String(cur.duration).trim() === "") &&
-          vidDur[name]
-        ) {
-          next[name] = { ...(next[name] || cur), duration: vidDur[name] };
-        }
-      });
-      return next;
-    });
-  }, [resProbe, vidDur, files]);
+    async function loadExistingVersions() {
+      try {
+        const res = await fetch("/api/asset_preview"); // same endpoint main page uses
+        if (!res.ok) return;
+        const rows = await res.json();
+
+        const map = {};
+        rows.forEach((row) => {
+          const name = (row.file_name || "").trim();
+          if (!name) return;
+          const v = row.no_of_versions || 0;
+          // keep highest version we see for that file_name
+          if (!map[name] || v > map[name]) {
+            map[name] = v;
+          }
+        });
+
+        setExistingVersions(map);
+      } catch (e) {
+        console.error("Failed to load existing versions", e);
+      }
+    }
+
+    loadExistingVersions();
+  }, []);
 
   // Per-file Save
   async function saveOneNew(file) {
