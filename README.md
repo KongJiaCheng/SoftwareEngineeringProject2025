@@ -50,19 +50,21 @@ python manage.py createsuperuser
 Clearing cache
 ```bash
 # Remove cached Python bytecode
-git rm -r --cached **/_pycache_/
-git rm -r --cached *.pyc
+git rm -r --cached "**/__pycache__" 2>$null
+git rm -r --cached "*.pyc" 2>$null
 
 # Remove Next.js build folders and dependencies
-git rm -r --cached .next/
-git rm -r --cached node_modules/
-git rm -r --cached dist/
+git rm -r --cached "frontend/.next" 2>$null
+git rm -r --cached "frontend/node_modules" 2>$null
+git rm -r --cached "frontend/dist" 2>$null
 
 # Remove Django migration files (optional – only if you want to regenerate migrations)
-git rm -r --cached **/migrations/
+git rm -r --cached "backend/**/migrations" 2>$null
 
-# Commit and push cleanup
+# Commit with message
+git add .
 git commit -m "Remove cached build, pycache, pyc, node_modules, dist, and migrations"
+# Push to GitHub
 git push
 ```
 
