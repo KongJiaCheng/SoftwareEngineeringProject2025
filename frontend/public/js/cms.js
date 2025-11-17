@@ -40,17 +40,20 @@ export function initCMS() {
       list: '/api/asset_preview', // Next.js route -> Django /api/preview/assets/
       detail: (id) => `/api/asset_preview?id=${id}`,
       preview: (id) => `/api/preview/assets/${id}/preview/`,
-      download: (id) => `/api/preview/assets/${id}/download/`,
+      download: (id) => `http://127.0.0.1:8000/api/download/${id}/`,
       versions: (id) => `/api/preview/assets/${id}/versions/`,
       createVersion: (id) => `/api/preview/assets/${id}/create_version/`,
       credentials: 'include',
     };
 
-    // 🔑 Serve media from Django: set to '/media/' if you rewrote it in next.config.js,
-    // or set absolute 'http://127.0.0.1:8000/media/' if you don't proxy.
-    const MEDIA_BASE =
-      document.querySelector('meta[name="media-url"]')?.content ||
-      '/media/';
+    // // 🔑 Serve media from Django: set to '/media/' if you rewrote it in next.config.js,
+    // // or set absolute 'http://127.0.0.1:8000/media/' if you don't proxy.
+    // const MEDIA_BASE =
+    //   document.querySelector('meta[name="media-url"]')?.content ||
+    //   '/media/';
+    // For local dev: always load real files from Django dev server
+    const MEDIA_BASE = 'http://127.0.0.1:8000/media/';
+
 
     // === Styles ===
     injectCSS(`
@@ -120,6 +123,7 @@ export function initCMS() {
     const root = el('div', { class: 'cms-root' }, [
       el('div', { class: 'cms-topbar' }, [
         el('div', { class: 'cms-title' }, ['ModelVerse']),
+        el('button', {class: 'btn',id: 'uploadBtn',onclick: () => { window.location.href = '/upload'; }}, ['Upload']),
       ]),
       el('div', { class: 'cms-body' }, [filterBar, grid]),
     ]);
@@ -201,8 +205,7 @@ export function initCMS() {
           (data.tags || []).map(t => el('div', { class: 'cms-tag' }, [t]))
         ),
         el('div', { style: 'display:flex;gap:10px;margin-top:6px;' }, [
-          el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doEdit(data);} }, ['Edit']),
-          el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doDelete(data);} }, ['Delete']),
+          el('button', { class: 'btn', onclick: (e) => { e.stopPropagation(); window.location.href = `/edit/${data.id}`; } }, ['Edit']),
         ]),
         el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doDownload(data);} }, ['Download'])
       );
@@ -212,14 +215,16 @@ export function initCMS() {
 
     // === Actions ===
     function doDownload(asset) {
-      const url = API.download(asset.id);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = asset.name || true;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
+    const url = API.download(asset.id);
+    const a = document.createElement("a");
+    a.href = url;          // now goes straight to Django 8000
+    a.download = asset.name || true;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+
 
     async function doDelete(asset) {
       alert(`Delete ${asset.name} (hook your API here)`);
@@ -304,9 +309,8 @@ export function initCMS() {
 
       // Actions
       const actions = el('div', { class:'row' }, [
-        el('button', { class:'btn', onclick: ()=>doEdit(asset) }, ['Edit']),
-        el('button', { class:'btn', onclick: ()=>doDelete(asset) }, ['Delete']),
-        el('button', { class:'btn', onclick: ()=>doDownload(asset) }, ['Download']),
+        el('button', { class: 'btn', onclick: () => { window.location.href = `/edit/${asset.id}`; } }, ['Edit']),
+        el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doDownload(data);} }, ['Download']),
         el('button', { class:'btn', onclick: ()=>modal.remove() }, ['Close']),
       ]);
       right.appendChild(actions);

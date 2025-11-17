@@ -16,6 +16,7 @@ urlpatterns = [
     path("api/download/<int:pk>/", viewsUploadDownload.download, name="asset_download"),
     path("api/preview/", include("asset_preview.urls")),
     path("api/asset_preview/", include("asset_preview.urls")),
+    path("api/", include("upload_download.urls")),
 ]
 
 if settings.DEBUG:

@@ -1,34 +1,39 @@
+/* Global – make background match your ModelVerse main page */
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background-color: #020617; /* deep navy */
+  color: #e5e7eb;            /* light text */
+}
+
+/* Upload page wrapper */
 .upload-page {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  padding: 2rem;
-  background-color: #121212; /* dark background */
-  color: #e0e0e0;
-  font-family: 'Inter', sans-serif;
-  min-height: 100vh;
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px 32px;
 }
 
 /* Title */
 .upload-title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: #fafafa;
+  color: #f9fafb;
 }
 
 /* Helper text */
 .helper {
   font-size: 0.95rem;
-  color: #a0aec0;
+  color: #9ca3af;
 }
 .helper code {
-  background: #1a202c;
+  background: #020617;
   padding: 0.15rem 0.35rem;
   border-radius: 6px;
-  color: #90cdf4;
+  color: #a5b4fc; /* indigo-200 */
 }
 .helper .link {
-  color: #63b3ed;
+  color: #a5b4fc;
   cursor: pointer;
 }
 .helper .link:hover {
@@ -37,17 +42,17 @@
 
 /* Dropzone */
 .dropzone {
-  border: 2px dashed #2d3748;
+  border: 2px dashed #1f2937;  /* slate-800 */
   border-radius: 12px;
-  background: #1a202c;
+  background: #020617;
   padding: 2.5rem;
   text-align: center;
   transition: all 0.25s ease;
   cursor: pointer;
 }
 .dropzone.dragging {
-  border-color: #63b3ed;
-  background-color: #2a4365;
+  border-color: #6366f1;       /* indigo-500 */
+  background-color: #020617;
 }
 .dz-content {
   display: flex;
@@ -62,25 +67,25 @@
 .dz-title {
   font-weight: 500;
   font-size: 1rem;
-  color: #edf2f7;
+  color: #e5e7eb;
 }
 .dz-title .link {
-  color: #63b3ed;
+  color: #6366f1;
 }
 .dz-sub {
   font-size: 0.85rem;
-  color: #a0aec0;
+  color: #9ca3af;
 }
 
 /* Selected file list */
 .selected {
-  background: #1a202c;
+  background: #020617;
   border-radius: 10px;
   padding: 1.5rem;
-  box-shadow: 0 0 0 1px #2d3748;
+  box-shadow: 0 0 0 1px #1f2937;
 }
 .selected h3 {
-  color: #e2e8f0;
+  color: #e5e7eb;
   font-size: 1.1rem;
   margin-bottom: 0.75rem;
 }
@@ -101,23 +106,26 @@
   gap: 0.75rem;
 }
 .btn {
-  background: #2d3748;
-  border: none;
-  color: #e2e8f0;
+  background: #0f172a;
+  border: 1px solid #1f2937;
+  color: #e5e7eb;
   padding: 0.5rem 1.25rem;
-  border-radius: 8px;
+  border-radius: 9999px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 .btn:hover {
-  background: #4a5568;
+  background: #111827;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.7);
+  transform: translateY(-1px);
 }
 .btn.primary {
-  background: #3182ce;
+  background: #6366f1;   /* purple like your main Download/Edit buttons */
+  border-color: #6366f1;
   color: #fff;
 }
 .btn.primary:hover {
-  background: #2b6cb0;
+  background: #4f46e5;
 }
 
 /* Progress bar */
@@ -125,19 +133,19 @@
   margin-top: 1rem;
   height: 8px;
   width: 100%;
-  background: #2d3748;
-  border-radius: 8px;
+  background: #0f172a;
+  border-radius: 9999px;
   overflow: hidden;
 }
 .progress .bar {
   height: 100%;
-  background: #63b3ed;
+  background: #6366f1;
   transition: width 0.3s ease;
 }
 
 /* Error */
 .error {
-  color: #fc8181;
+  color: #fecaca;
   font-size: 0.95rem;
   margin-top: -0.75rem;
 }
@@ -145,19 +153,19 @@
 /* Uploaded metadata section */
 .meta {
   margin-top: 2rem;
-  background: #1a202c;
+  background: #020617;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 0 0 1px #2d3748;
+  box-shadow: 0 0 0 1px #1f2937;
 }
 .meta h4 {
   font-size: 1.1rem;
-  color: #edf2f7;
+  color: #e5e7eb;
   margin-bottom: 1rem;
 }
 .item {
   padding: 1rem 0;
-  border-bottom: 1px solid #2d3748;
+  border-bottom: 1px solid #1f2937;
 }
 .item:last-child {
   border-bottom: none;
@@ -169,34 +177,37 @@
 }
 .kv .k {
   font-weight: 500;
-  color: #a0aec0;
+  color: #9ca3af;
 }
 .item .btn {
   margin-top: 0.6rem;
-  background: #2b6cb0;
-  color: #fff;
 }
 
-/* Bottom admin-style form look (like your screenshot) */
+/* Inputs / textareas – same card look as main site */
 input,
 textarea {
   width: 100%;
-  background: #2d3748;
-  border: 1px solid #4a5568;
+  background: #020617;
+  border: 1px solid #1f2937;
   border-radius: 6px;
   padding: 0.45rem 0.75rem;
-  color: #e2e8f0;
+  color: #e5e7eb;
   font-size: 0.95rem;
 }
 input:focus,
 textarea:focus {
   outline: none;
-  border-color: #63b3ed;
-  box-shadow: 0 0 0 1px #63b3ed;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px #6366f1;
 }
 label {
   font-weight: 500;
   margin-bottom: 0.3rem;
   display: block;
   color: #cbd5e0;
+}
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #020617 !important; /* your main navy color */
 }

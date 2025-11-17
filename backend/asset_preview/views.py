@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from asset_metadata.models import AssetMetadata
@@ -28,21 +28,34 @@ def _to_media_url(abs_or_rel_path: Path) -> str | None:
     rel = p.relative_to(media_root) if p.is_absolute() else Path(p)
     return urljoin(settings.MEDIA_URL, rel.as_posix())
 
+
+# class AssetPreviewViewSet(viewsets.ModelViewSet):
+#     """
+#     API for listing/retrieving AssetMetadata, and performing preview/download/version actions.
+#     """
+#     queryset = AssetMetadata.objects.all().order_by("-modified_at", "-created_at")
+#     serializer_class = AssetMetadataLiteSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     # Ensure basic info is up-to-date on list (file_size/file_type), then serialize
+#     def list(self, request, *args, **kwargs):
+#         media_root = Path(settings.MEDIA_ROOT)
+#         for meta in self.get_queryset():
+#             ensure_basic_info(meta, media_root)
+#         return super().list(request, *args, **kwargs)
+
 class AssetPreviewViewSet(viewsets.ModelViewSet):
-    """
-    API for listing/retrieving AssetMetadata, and performing preview/download/version actions.
-    """
     queryset = AssetMetadata.objects.all().order_by("-modified_at", "-created_at")
     serializer_class = AssetMetadataLiteSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # default: protect everything
 
-    # Ensure basic info is up-to-date on list (file_size/file_type), then serialize
-    def list(self, request, *args, **kwargs):
-        media_root = Path(settings.MEDIA_ROOT)
-        for meta in self.get_queryset():
-            ensure_basic_info(meta, media_root)
-        return super().list(request, *args, **kwargs)
-
+    # ⬇ Public reads, private writes
+    def get_permissions(self):
+        public_actions = {"list", "retrieve", "preview", "download", "versions"}
+        if getattr(self, "action", None) in public_actions:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    
     # GET /api/asset_preview/assets/{pk}/preview/
     @action(detail=True, methods=["get"])
     def preview(self, request, pk=None):

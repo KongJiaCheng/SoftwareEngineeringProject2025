@@ -1,6 +1,16 @@
 {
+<<<<<<< HEAD
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/api/asset_preview/route": "app/api/asset_preview/route.js",
   "/login/page": "app/login/page.js",
   "/main/page": "app/main/page.js"
+=======
+  "/api/asset_preview/route": "app/api/asset_preview/route.js",
+  "/api/asset_edit/[id]/route": "app/api/asset_edit/[id]/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/edit/[id]/page": "app/edit/[id]/page.js",
+  "/login/page": "app/login/page.js",
+  "/main/page": "app/main/page.js",
+  "/upload/page": "app/upload/page.js"
+>>>>>>> origin/main
 }
