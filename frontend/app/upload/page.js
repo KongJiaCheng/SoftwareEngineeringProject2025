@@ -11,7 +11,7 @@ function fileExt(name = "") {
   return i >= 0 ? name.slice(i).toLowerCase() : "";
 }
 
-// ⭐ NEW: helper to normalize tags into an array
+// helper to normalize tags into an array
 function parseTags(value) {
   if (!value) return [];
   if (Array.isArray(value)) {
@@ -155,9 +155,9 @@ export default function UploadPage() {
       file_type: type,
       file_size: f.size,
       description: "",
-      // ⭐ CHANGED: tags as array, not "[]"
+      // tags as array, not "[]"
       tags: [],
-      tagInput: "", // ⭐ NEW: per-file tag input buffer
+      tagInput: "", // per-file tag input buffer
       resolution: resProbe[f.name] || "", // auto (read-only)
       duration: vidDur[f.name] || "", // auto for videos (read-only)
       polygon_count: "", // GLB optional (editable in future if needed)
@@ -482,7 +482,7 @@ export default function UploadPage() {
     form.append("file_name", finalName);
     form.append("description", meta.description || "");
 
-    // ⭐ NEW: convert tags array to JSON string when sending
+    // convert tags array to JSON string when sending
     let tagsToSend = meta.tags;
     if (Array.isArray(tagsToSend)) {
       tagsToSend = JSON.stringify(tagsToSend);
@@ -716,7 +716,7 @@ export default function UploadPage() {
         const polygonValue =
           server.polygon_count ?? baseEdit.polygon_count ?? "";
 
-        // ⭐ NEW: derive tags array + input buffer
+        // derive tags array + input buffer
         const rawTags = server.tags ?? baseEdit.tags ?? [];
         const tagsArray = parseTags(rawTags);
         const tagInputValue = baseEdit.tagInput || "";
@@ -832,7 +832,7 @@ export default function UploadPage() {
               style: areaStyle,
             }),
 
-            // ⭐ NEW TAG UI
+            // TAG UI
             fieldLabel("Tags"),
             h(
               "div",

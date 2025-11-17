@@ -176,11 +176,5 @@ export default function MainPage() {
       
       console.log(`✅ Alternative method hid ${hiddenCount} buttons`);
     }, 3000);
-  };
-
-  if (loading) {
-    return null;
-  }
-
-  return null;
+  };  
 }

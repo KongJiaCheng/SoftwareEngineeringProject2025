@@ -213,7 +213,7 @@ export default function EditPage() {
           style={area}
         />
 
-        {/* ⭐ NEW TAG UI (similar to upload page) */}
+        {/* TAG UI (similar to upload page) */}
         <label style={labelStyle}>Tags</label>
         <div
           style={{
