@@ -179,73 +179,8 @@ export default function MainPage() {
   };
 
   if (loading) {
-    return (
-      <main style={{ padding: '20px', textAlign: 'center', background: '#1a1a1a', minHeight: '100vh', color: 'white' }}>
-        <h2 style={{ color: '#aeb8ff' }}>Loading 3D CMS — with Upload</h2>
-      </main>
-    );
+    return null;
   }
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#1a1a1a', color: 'white' }}>
-      {/* Header with user info and logout */}
-      <header style={{
-        background: '#2d2d2d',
-        padding: '1rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: '1px solid #444'
-      }}>
-        <h1 style={{ margin: 0, color: '#aeb8ff' }}>3D Digital Asset Manager</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span style={{ color: 'white' }}>
-            Welcome, <strong>{user?.username}</strong> 
-            <span style={{ 
-              padding: '0.25rem 0.5rem', 
-              background: user?.role === 'admin' ? '#dc3545' : 
-                         user?.role === 'editor' ? '#28a745' : '#6c757d',
-              borderRadius: '4px',
-              fontSize: '0.8rem',
-              marginLeft: '0.5rem',
-              color: 'white'
-            }}>
-              {user?.role}
-            </span>
-          </span>
-          <div style={{ fontSize: '0.8rem', color: restrictionsApplied ? '#28a745' : '#ff9800' }}>
-            {restrictionsApplied ? '🔒 Restricted' : '⏳ Applying...'}
-          </div>
-          <button 
-            onClick={logout}
-            style={{
-              padding: '0.5rem 1rem',
-              background: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* CMS Container - Ensure it has proper styling */}
-      <main id="cms-container" style={{ minHeight: 'calc(100vh - 80px)', background: '#1a1a1a' }}>
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          <h2 style={{ color: '#aeb8ff' }}>3D CMS — Access Level: {user?.role?.toUpperCase()}</h2>
-          <p style={{ color: '#ccc' }}>
-            {user?.role === 'admin' && 'Full access: Upload, Edit, Delete, Download, Manage Users'}
-            {user?.role === 'editor' && 'Editor access: Upload, Edit, Delete, Download assets'}
-            {user?.role === 'viewer' && 'Viewer access: Download only (Read-only mode)'}
-          </p>
-          {!restrictionsApplied && (
-            <p style={{ color: '#ff9800' }}>Applying restrictions...</p>
-          )}
-        </div>
-      </main>
-    </div>
-  );
+  return null;
 }
