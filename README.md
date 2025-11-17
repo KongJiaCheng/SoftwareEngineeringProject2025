@@ -43,6 +43,11 @@ python manage.py runserver
 
 
 ## Extra (option)
+If virtual environment not running(usually because placed in desktop or downloads)
+{NOTE: THIS IS ONLY A TEMPORARY FIX!!!!!}
+```bash
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
 Create superuser (id django administrator cannot login)
 ```bash
 python manage.py createsuperuser
