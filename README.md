@@ -39,22 +39,10 @@ python manage.py migrate
 # start server (use everytime to run backend)
 python manage.py runserver
 ```
-### paste this url link in the browser: http://127.0.0.1:8000/admin/asset_metadata/assetmetadata/
-## Frontend
+### paste this url link in the browser for going to admin administration dashboard: http://127.0.0.1:8000/admin
 
-install dependencies then run development server
-```bash
-# got to backend
-cd frontend
-```
-```bash
-#install dependencies
-npm install three "@loaders.gl/core" "@loaders.gl/gltf" "@chakra-ui/react" "@chakra-ui/system" "@emotion/react" "@emotion/styled" framer-motion bcryptjs
-#run development server
-npm run dev
-```
 
-Extra (option)
+## Extra (option)
 Create superuser (id django administrator cannot login)
 ```bash
 python manage.py createsuperuser
@@ -78,7 +66,23 @@ git commit -m "Remove cached build, pycache, pyc, node_modules, dist, and migrat
 git push
 ```
 
-Frontend
+
+
+
+## Frontend
+
+install dependencies then run development server
+```bash
+# got to backend
+cd frontend
+```
+```bash
+#install dependencies
+npm install three "@loaders.gl/core" "@loaders.gl/gltf" "@chakra-ui/react" "@chakra-ui/system" "@emotion/react" "@emotion/styled" framer-motion bcryptjs
+#run development server
+npm run dev
+```
+
 First, run the development server:
 
 ```bash (used Everytime to run frontend)
@@ -91,9 +95,9 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000/login](http://localhost:3000/login) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
