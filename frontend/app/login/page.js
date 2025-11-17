@@ -16,6 +16,28 @@ export default function LoginPage() {
     setTimeout(() => setToast({ show: false, message: '', type: 'info' }), 3000);
   };
 
+  // redirect away from login if already logged in
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      router.replace('/main');
+      return;
+    }
+
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [router]);
+
   const handleLogin = async (e) => {
     e?.preventDefault();
     
@@ -57,8 +79,11 @@ export default function LoginPage() {
         // Store user info
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('token', 'logged-in');
           if (rememberMe) {
             localStorage.setItem('rememberedUser', username);
+          } else {
+            localStorage.removeItem('rememberedUser');
           }
         }
         
@@ -66,7 +91,7 @@ export default function LoginPage() {
         
         setTimeout(() => {
           // Redirect to MAIN PAGE
-          router.push('/main');
+          router.replace('/main');
         }, 1500);
       } else {
         showToast(data.error || 'Login failed', 'error');

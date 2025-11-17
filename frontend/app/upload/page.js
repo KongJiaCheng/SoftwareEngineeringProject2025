@@ -62,6 +62,7 @@ function btnPrimaryStyle(enabled) {
 
 export default function UploadPage() {
   const h = React.createElement;
+  
 
   // State
   const [files, setFiles] = useState([]); // File objects chosen (not yet saved)
@@ -979,7 +980,7 @@ export default function UploadPage() {
                   "span",
                   { style: { color: "#22c55e" } },
                   "Saved ✓",
-                  setTimeout(() => (window.location.href = "/main"), 1000)
+                  setTimeout(() => (window.location.replace('main')), 1000)
                 )
               : null,
             h(
@@ -1079,7 +1080,7 @@ export default function UploadPage() {
         "button",
         {
           type: "button",
-          onClick: () => (window.location.href = "/main"), // navigate to main page
+          onClick: () => window.location.replace('/main'), // navigate to main page
           style: {
             padding: "10px 16px",
             borderRadius: 8,
