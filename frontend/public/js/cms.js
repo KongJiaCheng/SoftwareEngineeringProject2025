@@ -70,6 +70,12 @@ export function initCMS() {
       .cms-tags { display:flex; gap:6px; flex-wrap:wrap; }
       .cms-tag { background:#222856; border-radius:6px; padding:3px 7px; font-size:12px; color:#7aa2ff; }
 
+      .topbar-buttons {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
       /* Filters */
       .filter-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
       .filter-input { flex:1; padding:8px 12px; border-radius:8px; background:#131833; border:1px solid #2c3261; color:#e9ecff; }
@@ -120,13 +126,19 @@ export function initCMS() {
       ]),
     ]);
 
-    const root = el('div', { class: 'cms-root' }, [
-      el('div', { class: 'cms-topbar' }, [
-        el('div', { class: 'cms-title' }, ['ModelVerse']),
-        el('button', {class: 'btn',id: 'uploadBtn',onclick: () => { window.location.href = '/upload'; }}, ['Upload']),
+    const root = el('div',{class:'cms-root'},[
+      el('div',{class:'cms-topbar'},[
+        el('div',{class:'cms-title'},['ModelVerse']),
+        el('div',{class:'topbar-buttons'},[
+          el('button',{class:'btn',onclick:()=>window.location.replace('/upload')},['Upload']),
+          el('button',{class:'btn',style:{backgroundColor:'#ff4d4d',color:'white',fontWeight:'600'},
+            onclick:()=>{localStorage.removeItem('token');sessionStorage.removeItem('user');window.location.replace('/login')}},['Logout'])
+        ])
       ]),
-      el('div', { class: 'cms-body' }, [filterBar, grid]),
+      el('div',{class:'cms-body'},[filterBar,grid])
     ]);
+
+
 
     document.body.innerHTML = '';
     document.body.appendChild(root);

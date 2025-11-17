@@ -15,6 +15,10 @@ from PIL import Image
 from asset_metadata.models import AssetMetadata
 from .serializers import AssetSerializer
 
+# ✅ Ensure Python knows the proper MIME types for GLB/GLTF
+mimetypes.add_type("model/gltf-binary", ".glb")
+mimetypes.add_type("model/gltf+json", ".gltf")
+
 
 def glb_polygon_count(full_path: str):
     try:
@@ -138,6 +142,14 @@ def upload(request):
 
     # mime + size
     ctype = getattr(upfile, "content_type", None) or mimetypes.guess_type(file_name)[0] or "application/octet-stream"
+
+    # ✅ Force correct MIME for .glb / .gltf based on extension
+    lower_name = file_name.lower()
+    if lower_name.endswith(".glb"):
+        ctype = "model/gltf-binary"
+    elif lower_name.endswith(".gltf"):
+        ctype = "model/gltf+json"
+
     size_mb = round((getattr(upfile, "size", 0) or 0) / (1024 * 1024), 4)
 
     # decide subdir once (by type)
@@ -145,13 +157,12 @@ def upload(request):
         base_subdir = "image"
     elif ctype.startswith("video/"):
         base_subdir = "video"
-    elif "gltf" in ctype or "glb" in ctype or file_name.lower().endswith((".glb", ".gltf")):
+    elif "gltf" in ctype or "glb" in ctype or lower_name.endswith((".glb", ".gltf")):
         base_subdir = "model"
     else:
         base_subdir = "other"
 
     # HARD CHECK: only images, videos, or .glb
-    lower_name = file_name.lower()
     is_image = ctype.startswith("image/")
     is_video = ctype.startswith("video/")
     is_glb = lower_name.endswith(".glb")
@@ -242,6 +253,7 @@ def _remove_physical_file(asset):
             # log if you want
             print("File delete error:", e)
     return False
+
 
 @api_view(["PATCH"])
 @authentication_classes([])      # dev-open
@@ -374,4 +386,3 @@ def download(request, pk: int):
         content_type=ctype,
     )
     return response
-

@@ -8,12 +8,23 @@ export default function useRequireAuth() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    // Prevent back button showing cached pages
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', () => {
+      window.history.pushState(null, '', window.location.href);
+    });
+
+    const token = localStorage.getItem('token');
+
     if (!token) {
       router.replace('/login');
     } else {
       setReady(true);
     }
+
+    return () => {
+      window.removeEventListener('popstate', () => {});
+    };
   }, [router]);
 
   return { ready };
