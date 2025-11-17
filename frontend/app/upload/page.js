@@ -1,45 +1,114 @@
 "use client";
-
+import "./upload.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+
+// NEW: three.js + GLTFLoader for GLB probing
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+function fileExt(name = "") {
+  const i = name.lastIndexOf(".");
+  return i >= 0 ? name.slice(i).toLowerCase() : "";
+}
+
+// ⭐ NEW: helper to normalize tags into an array
+function parseTags(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.map((t) => String(t)).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    // try JSON array first
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.map((t) => String(t)).filter(Boolean);
+      }
+    } catch {}
+    // fallback: comma / newline list
+    return trimmed
+      .split(/[,\n]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function detectBaseSubdir(file) {
+  const type = (file.type || "").toLowerCase();
+  const ext = fileExt(file.name);
+
+  if (type.startsWith("image/")) return "image";
+  if (type.startsWith("video/")) return "video";
+  if (type.includes("gltf") || ext === ".glb" || ext === ".gltf") return "model";
+  return "other";
+}
+
+// tiny helpers
+function btnStyle(enabled) {
+  return {
+    padding: "10px 14px",
+    borderRadius: 8,
+    border: "1px solid #30363d",
+    background: enabled ? "#111827" : "#0b0f15",
+    color: "#e5e7eb",
+    cursor: enabled ? "pointer" : "not-allowed",
+  };
+}
+
+function btnPrimaryStyle(enabled) {
+  return {
+    padding: "10px 14px",
+    borderRadius: 8,
+    border: "1px solid #4f46e5",
+    background: enabled ? "#4f46e5" : "#4338ca",
+    color: "#fff",
+    cursor: enabled ? "pointer" : "not-allowed",
+    fontWeight: 600,
+  };
+}
 
 export default function UploadPage() {
   const h = React.createElement;
 
   // State
-  const [files, setFiles] = useState([]);               // File objects chosen (not yet saved)
+  const [files, setFiles] = useState([]); // File objects chosen (not yet saved)
   const [error, setError] = useState("");
-  const [progressMap, setProgressMap] = useState({});   // filename -> %
-  const [localEdits, setLocalEdits] = useState({});     // filename -> editable metadata
-  const [saveBusy, setSaveBusy] = useState({});         // filename -> boolean
-  const [saveOK, setSaveOK] = useState({});             // filename -> true
+  const [progressMap, setProgressMap] = useState({}); // filename -> %
+  const [localEdits, setLocalEdits] = useState({}); // filename -> editable metadata
+  const [saveBusy, setSaveBusy] = useState({}); // filename -> boolean
+  const [saveOK, setSaveOK] = useState({}); // filename -> true
   const [predictedInfo, setPredictedInfo] = useState({}); // { "original.ext": { rel, url } } (shown immediately)
-  const [savedInfo, setSavedInfo] = useState({});         // { "original.ext": serverRow } (shown after save)
+  const [savedInfo, setSavedInfo] = useState({}); // { "original.ext": serverRow } (shown after save)
+  const [existingVersions, setExistingVersions] = useState({}); // { "shiba.glb": 3, ... }
 
   // Client-probed metadata by ORIGINAL filename (before save)
-  const [vidDur, setVidDur] = useState({});             // { "name.mp4": seconds }
-  const [resProbe, setResProbe] = useState({});         // { "name.jpg": "1920x1080" }
+  const [vidDur, setVidDur] = useState({}); // { "name.mp4": seconds }
+  const [resProbe, setResProbe] = useState({}); // { "name.jpg": "1920x1080" }
 
   const inputRef = useRef(null);
   const dropRef = useRef(null);
 
-  const ALLOWED_MIME_PREFIX = ["image/", "video/"];
-  const ALLOWED_MIME_EXACT = ["model/gltf-binary", "model/gltf+json"]; 
-  const ALLOWED_EXT = [".glb",];
+  // GLTF loader instance (only on client)
+  const gltfLoaderRef = useRef(null);
+  useEffect(() => {
+    gltfLoaderRef.current = new GLTFLoader();
+  }, []);
 
-  function fileExt(name = "") {
-    const i = name.lastIndexOf(".");
-    return i >= 0 ? name.slice(i).toLowerCase() : "";
-  }
+  const ALLOWED_MIME_PREFIX = ["image/", "video/"];
+  const ALLOWED_MIME_EXACT = ["model/gltf-binary", "model/gltf+json"];
+  const ALLOWED_EXT = [".glb"];
 
   function isAllowedFile(f) {
     const t = String(f.type || "").toLowerCase();
     const ext = fileExt(f.name);
-    if (ALLOWED_MIME_PREFIX.some(p => t.startsWith(p))) return true;           // image/* or video/*
-    if (ALLOWED_MIME_EXACT.includes(t)) return true;                            // proper glTF mimes
-    if (ALLOWED_EXT.includes(ext)) return true;                                 // .glb 
+    if (ALLOWED_MIME_PREFIX.some((p) => t.startsWith(p))) return true; // image/* or video/*
+    if (ALLOWED_MIME_EXACT.includes(t)) return true; // proper glTF mimes
+    if (ALLOWED_EXT.includes(ext)) return true; // .glb
     return false;
   }
-  
 
   // Helpers
   function updateProgress(filename, pct) {
@@ -62,70 +131,150 @@ export default function UploadPage() {
     }
     const n = (rowOrType.file_name || "").toLowerCase();
     const t = (rowOrType.file_type || "").toLowerCase();
-    return n.endsWith(".glb") || t.includes("gltf") || (t.includes("octet-stream") && n.endsWith(".glb"));
+    return (
+      n.endsWith(".glb") ||
+      t.includes("gltf") ||
+      (t.includes("octet-stream") && n.endsWith(".glb"))
+    );
   };
 
   // Build default edit object from a file + client probes
- const primedFrom = (f) => {
-  const ext = fileExt(f.name);
-  const type = String(
-    f.type || (ext === ".glb" ? "model/gltf-binary" : ext === ".gltf" ? "model/gltf+json" : "")
-  ).toLowerCase();
+  const primedFrom = (f) => {
+    const ext = fileExt(f.name);
+    const type = String(
+      f.type ||
+        (ext === ".glb"
+          ? "model/gltf-binary"
+          : ext === ".gltf"
+          ? "model/gltf+json"
+          : "")
+    ).toLowerCase();
 
-  return {
-    file_name: f.name,
-    file_type: type,
-    file_size: f.size,
-    description: "",
-    tags: "[]",
-    resolution: resProbe[f.name] || "",   // auto (read-only)
-    duration: vidDur[f.name] || "",       // auto for videos (read-only)
-    polygon_count: "",                    // GLB optional (editable)
+    return {
+      file_name: f.name,
+      file_type: type,
+      file_size: f.size,
+      description: "",
+      // ⭐ CHANGED: tags as array, not "[]"
+      tags: [],
+      tagInput: "", // ⭐ NEW: per-file tag input buffer
+      resolution: resProbe[f.name] || "", // auto (read-only)
+      duration: vidDur[f.name] || "", // auto for videos (read-only)
+      polygon_count: "", // GLB optional (editable in future if needed)
+      no_of_versions: 1, // default; real value comes from backend after save
+    };
   };
-};
-
 
   /** Predict save path immediately on pick/drop (mirrors backend date folders). */
-  function predictForPickedFiles(fileList) {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const dir = `uploads/${yyyy}/${mm}/${dd}`; // adjust if your backend folder differs
+  const predictForPickedFiles = useCallback(
+    (fileList) => {
+      const nextPred = {};
+      Array.from(fileList).forEach((f) => {
+        // Use same default file_name as saveOneNew (primedFrom)
+        const meta = primedFrom(f);
+        const logicalName = (meta.file_name || "").trim() || f.name;
 
-    function slugifyBase(name) {
-      return name
-        .toLowerCase()
-        .replace(/\.[^.]+$/, "")      // drop extension
-        .replace(/[^a-z0-9]+/g, "-")  // non-alnum -> hyphen
-        .replace(/^-+|-+$/g, "")      // trim hyphens
-        .slice(0, 48) || "file";
+        const baseSubdir = detectBaseSubdir(f);
+
+        // how many versions DB says we already have for this name
+        const existing = existingVersions[logicalName] || 0;
+        const guessVersion = existing + 1;
+
+        const rel = `${baseSubdir}/${guessVersion}/${logicalName}`;
+        nextPred[f.name] = {
+          rel,
+          url: `/media/${rel}`, // keep in sync with MEDIA_URL
+        };
+      });
+
+      setPredictedInfo((prev) => ({ ...prev, ...nextPred }));
+    },
+    [existingVersions]
+  );
+
+  useEffect(() => {
+    if (!files.length) return;
+    // Rebuilded predictions with better version guesses
+    predictForPickedFiles(files);
+  }, [existingVersions, files, predictForPickedFiles]);
+
+  // NEW: probe GLB locally (resolution + polygon count)
+  function probeGlbMeta(file, url) {
+    if (!gltfLoaderRef.current) {
+      URL.revokeObjectURL(url);
+      return;
     }
 
-    function shortId(n = 7) {
-      const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      let out = "";
-      for (let i = 0; i < n; i++) out += chars[(Math.random() * chars.length) | 0];
-      return out;
-    }
+    const loader = gltfLoaderRef.current;
 
-    const next = {};
-    Array.from(fileList).forEach((f) => {
-      const ext = (f.name.includes(".") ? f.name.split(".").pop() : "").toLowerCase();
-      const base = slugifyBase(f.name);
-      const finalName = ext ? `${base}_${shortId()}.${ext}` : `${base}_${shortId()}`;
-      const rel = `${dir}/${finalName}`;
-      next[f.name] = { rel, url: `/media/${rel}` }; // change /media if your MEDIA_URL differs
-    });
+    loader.load(
+      url,
+      (gltf) => {
+        let polyCount = 0;
+        const box = new THREE.Box3();
 
-    setPredictedInfo((prev) => ({ ...prev, ...next }));
+        gltf.scene.traverse((obj) => {
+          if (obj.isMesh && obj.geometry) {
+            const geom = obj.geometry;
+
+            if (geom.index) {
+              polyCount += geom.index.count / 3;
+            } else if (geom.attributes && geom.attributes.position) {
+              polyCount += geom.attributes.position.count / 3;
+            }
+
+            box.expandByObject(obj);
+          }
+        });
+
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const res3d = `${size.x.toFixed(1)}x${size.y.toFixed(
+          1
+        )}x${size.z.toFixed(1)}`;
+
+        // store "resolution" for our existing auto-resolution flow
+        setResProbe((prev) => ({ ...prev, [file.name]: res3d }));
+
+        // directly patch polygon_count into localEdits
+        setLocalEdits((prev) => {
+          const existing = prev[file.name] || primedFrom(file);
+          return {
+            ...prev,
+            [file.name]: {
+              ...existing,
+              resolution: existing.resolution || res3d,
+              polygon_count: Math.round(polyCount),
+            },
+          };
+        });
+
+        URL.revokeObjectURL(url);
+      },
+      undefined,
+      (err) => {
+        console.error("GLB meta probe error", err);
+        URL.revokeObjectURL(url);
+      }
+    );
   }
 
   /** Probe local media metadata (duration & resolution) before save */
   function probeMediaMeta(fileList) {
     fileList.forEach((f) => {
       const type = String(f.type || "");
+      const lowerName = f.name.toLowerCase();
       const url = URL.createObjectURL(f);
+
+      // ---- GLB FIRST ----
+      if (
+        lowerName.endsWith(".glb") ||
+        lowerName.endsWith(".gltf") ||
+        type.includes("gltf")
+      ) {
+        probeGlbMeta(f, url);
+        return;
+      }
 
       // Images -> resolution via <img>
       if (type.startsWith("image/")) {
@@ -134,7 +283,10 @@ export default function UploadPage() {
           const w = img.naturalWidth || img.width || 0;
           const h = img.naturalHeight || img.height || 0;
           if (w && h) {
-            setResProbe((prev) => ({ ...prev, [f.name]: `${Math.round(w)}x${Math.round(h)}` }));
+            setResProbe((prev) => ({
+              ...prev,
+              [f.name]: `${Math.round(w)}x${Math.round(h)}`,
+            }));
           }
           URL.revokeObjectURL(url);
         };
@@ -170,76 +322,102 @@ export default function UploadPage() {
   }
 
   // Pick & DnD
-  const onPick = useCallback((e) => {
-    const picked = Array.from(e.target.files || []);
-    if (!picked.length) return;
+  const onPick = useCallback(
+    (e) => {
+      const picked = Array.from(e.target.files || []);
+      if (!picked.length) return;
 
-    const valid = picked.filter(isAllowedFile);
-    const rejected = picked.filter(f => !isAllowedFile(f));
+      const valid = picked.filter(isAllowedFile);
+      const rejected = picked.filter((f) => !isAllowedFile(f));
 
-    if (rejected.length) {
-      alert(
-        "The following files were rejected (only images, videos, .glb, .gltf allowed):\n\n" +
-        rejected.map(f => "• " + f.name).join("\n")
-      );
-    }
-    if (!valid.length) {
-      // clear everything if nothing valid
-      setFiles([]); setLocalEdits({}); setProgressMap({}); setSaveBusy({});
-      setSaveOK({}); setPredictedInfo({}); setSavedInfo({}); setError("");
-      if (inputRef.current) inputRef.current.value = "";
-      return;
-    }
+      if (rejected.length) {
+        alert(
+          "The following files were rejected (only images, videos, .glb, .gltf allowed):\n\n" +
+            rejected.map((f) => "• " + f.name).join("\n")
+        );
+      }
+      if (!valid.length) {
+        // clear everything if nothing valid
+        setFiles([]);
+        setLocalEdits({});
+        setProgressMap({});
+        setSaveBusy({});
+        setSaveOK({});
+        setPredictedInfo({});
+        setSavedInfo({});
+        setError("");
+        if (inputRef.current) inputRef.current.value = "";
+        return;
+      }
 
-    // reset UI state
-    setError(""); setProgressMap({}); setSaveBusy({}); setSaveOK({});
-    setPredictedInfo({}); setSavedInfo({});
+      // reset UI state
+      setError("");
+      setProgressMap({});
+      setSaveBusy({});
+      setSaveOK({});
+      setPredictedInfo({});
+      setSavedInfo({});
 
-    // store valid files only
-    setFiles(valid);
-    predictForPickedFiles(valid);
-    probeMediaMeta(valid);
+      // store valid files only
+      setFiles(valid);
+      predictForPickedFiles(valid);
+      probeMediaMeta(valid);
 
-    const init = {};
-    valid.forEach((f) => (init[f.name] = primedFrom(f)));
-    setLocalEdits(init);
-  }, [resProbe, vidDur]);
+      const init = {};
+      valid.forEach((f) => (init[f.name] = primedFrom(f)));
+      setLocalEdits(init);
+    },
+    [resProbe, vidDur]
+  );
 
-  const onDrop = useCallback((e) => {
-    e.preventDefault(); e.stopPropagation();
-    const dropped = Array.from(e.dataTransfer?.files || []);
-    if (!dropped.length) return;
+  const onDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const dropped = Array.from(e.dataTransfer?.files || []);
+      if (!dropped.length) return;
 
-    const valid = dropped.filter(isAllowedFile);
-    const rejected = dropped.filter(f => !isAllowedFile(f));
+      const valid = dropped.filter(isAllowedFile);
+      const rejected = dropped.filter((f) => !isAllowedFile(f));
 
-    if (rejected.length) {
-      alert(
-        "The following files were rejected (only images, videos, .glb, .gltf allowed):\n\n" +
-        rejected.map(f => "• " + f.name).join("\n")
-      );
-    }
-    if (!valid.length) {
-      // clear everything if nothing valid
-      setFiles([]); setLocalEdits({}); setProgressMap({}); setSaveBusy({});
-      setSaveOK({}); setPredictedInfo({}); setSavedInfo({}); setError("");
-      return;
-    }
+      if (rejected.length) {
+        alert(
+          "The following files were rejected (only images, videos, .glb, .gltf allowed):\n\n" +
+            rejected.map((f) => "• " + f.name).join("\n")
+        );
+      }
+      if (!valid.length) {
+        // clear everything if nothing valid
+        setFiles([]);
+        setLocalEdits({});
+        setProgressMap({});
+        setSaveBusy({});
+        setSaveOK({});
+        setPredictedInfo({});
+        setSavedInfo({});
+        setError("");
+        return;
+      }
 
-    // reset UI state
-    setError(""); setProgressMap({}); setSaveBusy({}); setSaveOK({});
-    setPredictedInfo({}); setSavedInfo({});
+      // reset UI state
+      setError("");
+      setProgressMap({});
+      setSaveBusy({});
+      setSaveOK({});
+      setPredictedInfo({});
+      setSavedInfo({});
 
-    // store valid files only
-    setFiles(valid);
-    predictForPickedFiles(valid);
-    probeMediaMeta(valid);
+      // store valid files only
+      setFiles(valid);
+      predictForPickedFiles(valid);
+      probeMediaMeta(valid);
 
-    const init = {};
-    valid.forEach((f) => (init[f.name] = primedFrom(f)));
-    setLocalEdits(init);
-  }, [resProbe, vidDur]);
-
+      const init = {};
+      valid.forEach((f) => (init[f.name] = primedFrom(f)));
+      setLocalEdits(init);
+    },
+    [resProbe, vidDur]
+  );
 
   const onDragOver = useCallback((e) => {
     e.preventDefault();
@@ -257,26 +435,33 @@ export default function UploadPage() {
     };
   }, [onDragOver, onDrop]);
 
-  // Keep localEdits in sync when async probes finish
+  // Keep localEdits in sync when async probes finish (images/videos)
   useEffect(() => {
-    if (!files.length) return;
-    setLocalEdits((prev) => {
-      const next = { ...prev };
-      files.forEach((f) => {
-        const name = f.name;
-        const cur = next[name] || {};
-        // If resolution empty but probe arrived, set it
-        if ((!cur.resolution || String(cur.resolution).trim() === "") && resProbe[name]) {
-          next[name] = { ...cur, resolution: resProbe[name] };
-        }
-        // If duration empty but video probe arrived, set it
-        if ((!cur.duration || String(cur.duration).trim() === "") && vidDur[name]) {
-          next[name] = { ...(next[name] || cur), duration: vidDur[name] };
-        }
-      });
-      return next;
-    });
-  }, [resProbe, vidDur, files]);
+    async function loadExistingVersions() {
+      try {
+        const res = await fetch("/api/asset_preview"); // same endpoint main page uses
+        if (!res.ok) return;
+        const rows = await res.json();
+
+        const map = {};
+        rows.forEach((row) => {
+          const name = (row.file_name || "").trim();
+          if (!name) return;
+          const v = row.no_of_versions || 0;
+          // keep highest version we see for that file_name
+          if (!map[name] || v > map[name]) {
+            map[name] = v;
+          }
+        });
+
+        setExistingVersions(map);
+      } catch (e) {
+        console.error("Failed to load existing versions", e);
+      }
+    }
+
+    loadExistingVersions();
+  }, []);
 
   // Per-file Save
   async function saveOneNew(file) {
@@ -285,41 +470,41 @@ export default function UploadPage() {
 
     // Require a file name
     const finalName = (meta.file_name || "").trim() || file.name;
-    
+
     // Validate file type
-    async function saveOneNew(file) {
-      if (!isAllowedFile(file)) {
-        alert("Unsupported file type. Only images, videos, .glb, or .gltf are allowed.");
-        throw new Error("Unsupported file type");
-      }
+    if (!isAllowedFile(file)) {
+      alert("Unsupported file type. Only images, videos, .glb, or .gltf are allowed.");
+      throw new Error("Unsupported file type");
     }
 
     const form = new FormData();
-    // NOTE: keeping field name "file" to match your existing backend handler for this endpoint.
     form.append("file", file, finalName);
     form.append("file_name", finalName);
     form.append("description", meta.description || "");
-    form.append("tags", meta.tags || "[]");             // server accepts JSON or comma list
 
-    // Always include resolution if we have it (server will also try to detect for images)
+    // ⭐ NEW: convert tags array to JSON string when sending
+    let tagsToSend = meta.tags;
+    if (Array.isArray(tagsToSend)) {
+      tagsToSend = JSON.stringify(tagsToSend);
+    }
+    form.append("tags", tagsToSend || "[]");
+
     if (meta.resolution) form.append("resolution", String(meta.resolution));
 
-    // Videos: include duration seconds if available
     if (isVideo(meta.file_type || file.type)) {
       const d = String(meta.duration || "").trim();
       if (d) form.append("duration", d);
     }
 
-    // GLB: optional polygon_count
     if (isGLB(meta.file_type || file.type) || finalName.toLowerCase().endsWith(".glb")) {
-      if (meta.polygon_count !== undefined) form.append("polygon_count", String(meta.polygon_count || "").trim());
+      if (meta.polygon_count !== undefined)
+        form.append("polygon_count", String(meta.polygon_count || "").trim());
     }
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/upload_download", true); // keep your existing endpoint
+      xhr.open("POST", "/api/upload_download", true);
 
-      // progress
       xhr.upload.addEventListener("progress", (evt) => {
         if (!evt.lengthComputable) return;
         const pct = Math.round((evt.loaded / evt.total) * 100);
@@ -331,7 +516,9 @@ export default function UploadPage() {
         const ct = xhr.getResponseHeader("content-type") || "";
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
-            const j = ct.includes("application/json") ? JSON.parse(xhr.responseText) : { ok: true };
+            const j = ct.includes("application/json")
+              ? JSON.parse(xhr.responseText)
+              : { ok: true };
             resolve(j);
           } catch {
             resolve({ ok: true });
@@ -356,7 +543,6 @@ export default function UploadPage() {
       xhr.send(form);
     })
       .then((payload) => {
-        // Capture the server's returned row to override predicted location
         const row = payload?.asset || payload;
         setSavedInfo((m) => ({ ...m, [key]: row }));
         setSaveOK((s) => ({ ...s, [key]: true }));
@@ -386,8 +572,16 @@ export default function UploadPage() {
     return h(
       "div",
       { ref: dropRef, style: styles, onClick },
-      h("div", { style: { fontSize: 18, marginBottom: 8 } }, "Drag & drop files here"),
-      h("div", { style: { fontSize: 14, opacity: 0.7 } }, "or click to choose")
+      h(
+        "div",
+        { style: { fontSize: 18, marginBottom: 8 } },
+        "Drag & drop files here"
+      ),
+      h(
+        "div",
+        { style: { fontSize: 14, opacity: 0.7 } },
+        "or click to choose"
+      )
     );
   }
 
@@ -396,7 +590,11 @@ export default function UploadPage() {
     return h(
       "div",
       { style: { marginTop: 16 } },
-      h("div", { style: { fontWeight: 600, marginBottom: 6 } }, "Selected files"),
+      h(
+        "div",
+        { style: { fontWeight: 600, marginBottom: 6 } },
+        "Selected files"
+      ),
       h(
         "ul",
         { style: { listStyle: "none", padding: 0, margin: 0 } },
@@ -416,9 +614,19 @@ export default function UploadPage() {
             },
             h(
               "div",
-              { style: { display: "flex", justifyContent: "space-between", gap: 12 } },
+              {
+                style: {
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                },
+              },
               h("span", null, f.name + " (" + humanSize(f.size) + ")"),
-              h("span", { style: { fontVariantNumeric: "tabular-nums" } }, (progressMap[f.name] || 0) + "%")
+              h(
+                "span",
+                { style: { fontVariantNumeric: "tabular-nums" } },
+                (progressMap[f.name] || 0) + "%"
+              )
             ),
             h(
               "div",
@@ -450,7 +658,13 @@ export default function UploadPage() {
   function renderEditCards() {
     if (!files.length) return null;
 
-    const fieldLabel = (txt) => h("label", { style: { display: "block", marginBottom: 6, color: "#d1d5db" } }, txt);
+    const fieldLabel = (txt) =>
+      h(
+        "label",
+        { style: { display: "block", marginBottom: 6, color: "#d1d5db" } },
+        txt
+      );
+
     const inputStyle = {
       width: "100%",
       background: "#0b0f15",
@@ -465,66 +679,247 @@ export default function UploadPage() {
     return h(
       "div",
       { style: { marginTop: 24 } },
-      h("h2", { style: { fontSize: 18, fontWeight: 700, color: "#e5e7eb", marginBottom: 12 } }, "Fill metadata, then Save"),
-      ...files.map((f) => {
-        const v = localEdits[f.name] || primedFrom(f);
+      h(
+        "h2",
+        {
+          style: {
+            fontSize: 18,
+            fontWeight: 700,
+            color: "#e5e7eb",
+            marginBottom: 12,
+          },
+        },
+        "Fill metadata, then Save"
+      ),
+      ...files.map((file) => {
+        const baseEdit = localEdits[file.name] || primedFrom(file);
 
-        const server = savedInfo[f.name] || {};
-        const ext = fileExt(f.name);
+        const server = savedInfo[file.name] || {};
+        const ext = fileExt(file.name);
 
         // File type: server > local > browser > by extension
         const fileTypeValue =
           server.file_type ||
-          v.file_type ||
-          f.type ||
-          (ext === ".glb" ? "model/gltf-binary" : ext === ".gltf" ? "model/gltf+json" : "");
+          baseEdit.file_type ||
+          file.type ||
+          (ext === ".glb"
+            ? "model/gltf-binary"
+            : ext === ".gltf"
+            ? "model/gltf+json"
+            : "");
 
         // Resolution: server > local > probe
         const resolutionValue =
-          server.resolution ?? v.resolution ?? resProbe[f.name] ?? "";
+          server.resolution ?? baseEdit.resolution ?? resProbe[file.name] ?? "";
 
         // Polygon count (GLB): server > local
         const polygonValue =
-          server.polygon_count ?? v.polygon_count ?? "";
+          server.polygon_count ?? baseEdit.polygon_count ?? "";
 
-        const set = (k) => (e) => setLocalEdits((prev) => ({ ...prev, [f.name]: { ...prev[f.name], [k]: e.target.value } }));
-        const t = String(v.file_type || f.type || "").toLowerCase();
+        // ⭐ NEW: derive tags array + input buffer
+        const rawTags = server.tags ?? baseEdit.tags ?? [];
+        const tagsArray = parseTags(rawTags);
+        const tagInputValue = baseEdit.tagInput || "";
+
+        const set =
+          (k) =>
+          (e) =>
+            setLocalEdits((prev) => ({
+              ...prev,
+              [file.name]: { ...prev[file.name], [k]: e.target.value },
+            }));
+
+        const t = String(baseEdit.file_type || file.type || "").toLowerCase();
 
         // show duration field for videos (even if not yet probed)
         const showDuration = t.startsWith("video/");
 
         // readable size (matches the top list)
-        const sizeHuman = humanSize(f.size);
+        const sizeHuman = humanSize(file.size);
 
         // Instant location prediction, overridden by server truth after save
-        const predicted = predictedInfo[f.name]?.rel;
-        const saved = savedInfo[f.name]?.file_location || savedInfo[f.name]?.location;
+        const predicted = predictedInfo[file.name]?.rel;
+        const saved =
+          savedInfo[file.name]?.file_location || savedInfo[file.name]?.location;
         const locationValue = saved || predicted || "";
 
-        const isGlb = isGLB(t) || f.name.toLowerCase().endsWith(".glb");
+        const isGlbFile = isGLB(t) || file.name.toLowerCase().endsWith(".glb");
+
+        // Handlers for tag add / remove
+        const handleTagInputChange = (e) => {
+          const val = e.target.value;
+          setLocalEdits((prev) => ({
+            ...prev,
+            [file.name]: { ...(prev[file.name] || baseEdit), tagInput: val },
+          }));
+        };
+
+        const handleAddTag = () => {
+          const newTag = (tagInputValue || "").trim();
+          if (!newTag) return;
+          setLocalEdits((prev) => {
+            const current = prev[file.name] || baseEdit;
+            const currentTags = parseTags(current.tags ?? []);
+            if (currentTags.includes(newTag)) {
+              // no duplicates; just clear input
+              return {
+                ...prev,
+                [file.name]: { ...current, tagInput: "" },
+              };
+            }
+            return {
+              ...prev,
+              [file.name]: {
+                ...current,
+                tags: [...currentTags, newTag],
+                tagInput: "",
+              },
+            };
+          });
+        };
+
+        const handleRemoveTag = (tag, idx) => {
+          setLocalEdits((prev) => {
+            const current = prev[file.name] || baseEdit;
+            const currentTags = parseTags(current.tags ?? []);
+            const nextTags = currentTags.filter(
+              (tVal, i) => !(tVal === tag && i === idx)
+            );
+            return {
+              ...prev,
+              [file.name]: {
+                ...current,
+                tags: nextTags,
+              },
+            };
+          });
+        };
 
         return h(
           "section",
           {
-            key: f.name,
-            style: { marginBottom: 16, border: "1px solid #262626", background: "#0a0e14", borderRadius: 10, padding: 16, color: "#e5e7eb" },
+            key: file.name,
+            style: {
+              marginBottom: 16,
+              border: "1px solid #262626",
+              background: "#0a0e14",
+              borderRadius: 10,
+              padding: 16,
+              color: "#e5e7eb",
+            },
           },
-          h("div", { style: { fontWeight: 600, marginBottom: 8 } }, f.name + " (" + sizeHuman + ")"),
+          h(
+            "div",
+            { style: { fontWeight: 600, marginBottom: 8 } },
+            file.name + " (" + sizeHuman + ")"
+          ),
           h(
             "div",
             { style: { display: "grid", gridTemplateColumns: "1fr", gap: 12 } },
 
             // Editable metadata
             fieldLabel("File name"),
-            h("input", { value: v.file_name || f.name, onChange: set("file_name"), style: inputStyle }),
+            h("input", {
+              value: baseEdit.file_name || file.name,
+              onChange: set("file_name"),
+              style: inputStyle,
+            }),
 
             fieldLabel("Description"),
-            h("textarea", { value: v.description || "", onChange: set("description"), style: areaStyle }),
+            h("textarea", {
+              value: baseEdit.description || "",
+              onChange: set("description"),
+              style: areaStyle,
+            }),
 
-            fieldLabel("Tags (JSON array or comma list)"),
-            h("textarea", { value: v.tags || "[]", onChange: set("tags"), style: areaStyle }),
+            // ⭐ NEW TAG UI
+            fieldLabel("Tags"),
+            h(
+              "div",
+              {
+                style: {
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                },
+              },
+              h("input", {
+                value: tagInputValue,
+                onChange: handleTagInputChange,
+                style: { ...inputStyle, width: "100%" },
+                placeholder: "Type a tag and click Add",
+              }),
+              h(
+                "button",
+                {
+                  type: "button",
+                  onClick: handleAddTag,
+                  style: btnStyle(true),
+                },
+                "Add"
+              )
+            ),
+            tagsArray.length
+              ? h(
+                  "div",
+                  {
+                    style: {
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 8,
+                      marginTop: 4,
+                    },
+                  },
+                  ...tagsArray.map((tag, idx) =>
+                    h(
+                      "span",
+                      {
+                        key: tag + idx,
+                        style: {
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "4px 8px",
+                          borderRadius: 9999,
+                          border: "1px solid #4b5563",
+                          background: "#111827",
+                          fontSize: 12,
+                        },
+                      },
+                      tag,
+                      h(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: () => handleRemoveTag(tag, idx),
+                          style: {
+                            border: "none",
+                            background: "transparent",
+                            color: "#fca5a5",
+                            cursor: "pointer",
+                            fontSize: 12,
+                            lineHeight: 1,
+                            padding: 0,
+                          },
+                        },
+                        "✕"
+                      )
+                    )
+                  )
+                )
+              : h(
+                  "div",
+                  {
+                    style: {
+                      fontSize: 12,
+                      opacity: 0.7,
+                      marginTop: 4,
+                    },
+                  },
+                  "No tags yet. Add one above."
+                ),
 
-            // Read-only facts (to mimic your previous review card)
+            // Read-only facts
             fieldLabel("File type"),
             h("input", { value: fileTypeValue, readOnly: true, style: roStyle }),
 
@@ -537,35 +932,70 @@ export default function UploadPage() {
             fieldLabel("Resolution (auto)"),
             h("input", { value: resolutionValue, readOnly: true, style: roStyle }),
 
-
             showDuration
               ? h(
                   React.Fragment,
                   null,
                   fieldLabel("Duration (auto, seconds)"),
-                  h("input", { value: String(v.duration || vidDur[f.name] || ""), readOnly: true, style: roStyle })
+                  h("input", {
+                    value: String(baseEdit.duration || vidDur[file.name] || ""),
+                    readOnly: true,
+                    style: roStyle,
+                  })
                 )
               : null,
 
-            isGlb
+            isGlbFile
               ? h(
                   React.Fragment,
                   null,
                   fieldLabel("Polygon count (auto)"),
-                  h("input", { value: String(polygonValue || ""), readOnly: true, style: roStyle })
+                  h("input", {
+                    value: String(polygonValue || ""),
+                    readOnly: true,
+                    style: roStyle,
+                  })
                 )
               : null
           ),
           h(
             "div",
-            { style: { marginTop: 12, display: "flex", gap: 8, alignItems: "center" } },  // buttons row
+            {
+              style: {
+                marginTop: 12,
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+              },
+            },
             h(
-              "button", // Save button
-              { type: "button", onClick: () => saveOneNew(f), disabled: !!saveBusy[f.name], style: btnPrimaryStyle(!saveBusy[f.name]) },
-              saveBusy[f.name] ? "Saving…" : "Save"
+              "button",
+              {
+                type: "button",
+                onClick: () => saveOneNew(file),
+                disabled: !!saveBusy[file.name],
+                style: btnPrimaryStyle(!saveBusy[file.name]),
+              },
+              saveBusy[file.name] ? "Saving…" : "Save"
             ),
-            saveOK[f.name] ? h("span", { style: { color: "#22c55e" } }, "Saved ✓", (setTimeout(() => (window.location.href = "/main"), 1000))) : null,
-            h("span", { style: { marginLeft: "auto", fontVariantNumeric: "tabular-nums" } }, (progressMap[f.name] || 0) + "%")
+            saveOK[file.name]
+              ? h(
+                  "span",
+                  { style: { color: "#22c55e" } },
+                  "Saved ✓",
+                  setTimeout(() => (window.location.replace('main')), 1000)
+                )
+              : null,
+            h(
+              "span",
+              {
+                style: {
+                  marginLeft: "auto",
+                  fontVariantNumeric: "tabular-nums",
+                },
+              },
+              (progressMap[file.name] || 0) + "%"
+            )
           )
         );
       })
@@ -597,7 +1027,11 @@ export default function UploadPage() {
       { style: { marginTop: 16, display: "flex", gap: 8 } },
       h(
         "button",
-        { type: "button", onClick: () => inputRef.current?.click(), style: btnStyle(true) },
+        {
+          type: "button",
+          onClick: () => inputRef.current?.click(),
+          style: btnStyle(true),
+        },
         "Choose files"
       ),
       h(
@@ -625,36 +1059,57 @@ export default function UploadPage() {
 
   // Main
   return h(
-  "main",
-  { style: { maxWidth: 900, margin: "24px auto", padding: "0 16px", color: "#e5e7eb" } },
+    "main",
+    {
+      style: {
+        maxWidth: 900,
+        margin: "24px auto",
+        padding: "0 16px",
+        color: "#e5e7eb",
+        backgroundColor: "transparent",
+      },
+    },
 
-  h(
-    "div",
-    { style: { display: "flex", justifyContent: "flex-start", marginBottom: 16 } },
     h(
-      "button",
+      "div",
       {
-        type: "button",
-        onClick: () => (window.location.href = "/main"), // navigate to main page
         style: {
-          padding: "10px 16px",
-          borderRadius: 8,
-          border: "1px solid #4f46e5",
-          background: "#4f46e5",
-          color: "#fff",
-          cursor: "pointer",
-          fontWeight: 600,
+          display: "flex",
+          justifyContent: "flex-start",
+          marginBottom: 16,
         },
       },
-      "Back To Main Page"
-    )
-  ),
+      h(
+        "button",
+        {
+          type: "button",
+          onClick: () => window.location.replace('/main'), // navigate to main page
+          style: {
+            padding: "10px 16px",
+            borderRadius: 8,
+            border: "1px solid #4f46e5",
+            background: "#4f46e5",
+            color: "#fff",
+            cursor: "pointer",
+            fontWeight: 600,
+          },
+        },
+        "Back To Main Page"
+      )
+    ),
 
+    // Existing content
+    h(
+      "h1",
+      { style: { fontSize: 24, fontWeight: 700, marginBottom: 8 } },
+      "Upload files"
+    ),
 
-  // Existing content
-  h("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 8 } }, "Upload files"),
-
-    h("p", { style: { margin: 0, opacity: 0.8 } }, "Pick files, edit metadata, then press Save on each card to create them."),
+    h(
+      "p",
+      { style: { margin: 0, opacity: 0.8 } },
+      "Pick files, edit metadata, then press Save on each card to create them."
+    ),
 
     // hidden input
     h("input", {
@@ -678,28 +1133,4 @@ export default function UploadPage() {
     // Editable cards (pre-save)
     renderEditCards()
   );
-}
-
-// tiny helpers
-function btnStyle(enabled) {
-  return {
-    padding: "10px 14px",
-    borderRadius: 8,
-    border: "1px solid #30363d",
-    background: enabled ? "#111827" : "#0b0f15",
-    color: "#e5e7eb",
-    cursor: enabled ? "pointer" : "not-allowed",
-  };
-}
-
-function btnPrimaryStyle(enabled) {
-  return {
-    padding: "10px 14px",
-    borderRadius: 8,
-    border: "1px solid #4f46e5",
-    background: enabled ? "#4f46e5" : "#4338ca",
-    color: "#fff",
-    cursor: enabled ? "pointer" : "not-allowed",
-    fontWeight: 600,
-  };
 }

@@ -16,6 +16,37 @@ export default function LoginPage() {
     setTimeout(() => setToast({ show: false, message: '', type: 'info' }), 3000);
   };
 
+  // redirect away from login if already logged in
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const token = localStorage.getItem('token');
+    const userStr = sessionStorage.getItem('user');
+
+    if (token && userStr) {
+      // both token and user exist – safe to go to main
+      router.replace('/main');
+      return;
+    }
+
+    if (token && !userStr) {
+      // stale token from old session – clear it so no redirect loop
+      localStorage.removeItem('token');
+    }
+
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [router]);
+
+
   const handleLogin = async (e) => {
     e?.preventDefault();
     
@@ -27,7 +58,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/auth/token/', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -57,8 +88,11 @@ export default function LoginPage() {
         // Store user info
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('token', 'logged-in');
           if (rememberMe) {
             localStorage.setItem('rememberedUser', username);
+          } else {
+            localStorage.removeItem('rememberedUser');
           }
         }
         
@@ -66,7 +100,7 @@ export default function LoginPage() {
         
         setTimeout(() => {
           // Redirect to MAIN PAGE
-          router.push('/main');
+          router.replace('/main');
         }, 1500);
       } else {
         showToast(data.error || 'Login failed', 'error');
@@ -171,14 +205,6 @@ export default function LoginPage() {
             {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
-
-        {/* Test Credentials Hint */}
-        <div className="test-credentials">
-          <p><strong>Test Accounts:</strong></p>
-          <p>admin / admin123</p>
-          <p>editor1 / editor123</p>
-          <p>viewer1 / viewer123</p>
-        </div>
       </div>
 
       <style jsx>{`
@@ -307,24 +333,6 @@ export default function LoginPage() {
           opacity: 0.7;
           cursor: not-allowed;
           transform: none;
-        }
-
-        .test-credentials {
-          margin-top: 20px;
-          padding: 15px;
-          background: #f8f9fa;
-          border-radius: 10px;
-          border-left: 4px solid #667eea;
-          font-size: 12px;
-          color: #666;
-        }
-
-        .test-credentials p {
-          margin: 5px 0;
-        }
-
-        .test-credentials strong {
-          color: #333;
         }
 
         /* Toast Styles */

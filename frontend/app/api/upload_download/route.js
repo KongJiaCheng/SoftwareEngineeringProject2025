@@ -29,13 +29,22 @@ export async function GET(req) {
   const id = url.searchParams.get("id");
 
   if (isDownload) {
-    if (!id) return NextResponse.json({ detail: "Missing id" }, { status: 400 });
-
-    const r = await fetch(`${getBase()}/upload_download/${id}/download/`);
-    if (!r.ok && r.headers.get("content-type")?.includes("application/json")) {
-      const data = await r.json().catch(() => ({}));
-      return NextResponse.json(data, { status: r.status });
+    if (!id) {
+      return NextResponse.json({ detail: "Missing id" }, { status: 400 });
     }
+
+    const r = await fetch(`${getBase()}/upload_download/download/${id}/`);
+
+    // If backend failed, show the error text in browser instead of fake download
+    if (!r.ok) {
+      const text = await r.text().catch(() => "");
+      return new Response(
+        `Backend error (${r.status}):\n\n${text}`,
+        { status: r.status, headers: { "Content-Type": "text/plain" } }
+      );
+    }
+
+    // Success path – stream file
     return new Response(r.body, {
       status: r.status,
       headers: {
@@ -46,11 +55,14 @@ export async function GET(req) {
     });
   }
 
-  // original JSON GET behavior
-  const r = await fetch(`${getBase()}/upload/`, { method: "GET" });
+  // Optional: list endpoint
+  // /api/upload  →  http://localhost:8000/api/upload_download/upload/
+  const r = await fetch(`${getBase()}/upload_download/upload/`, { method: "GET" });
   const data = await r.json().catch(() => ({}));
   return NextResponse.json(data, { status: r.status });
 }
+
+
 
 export async function PATCH(_req, { params }) {
   const base = process.env.BACKEND_API_BASE;

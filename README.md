@@ -39,7 +39,45 @@ python manage.py migrate
 # start server (use everytime to run backend)
 python manage.py runserver
 ```
-### paste this url link in the browser: http://127.0.0.1:8000/admin/asset_metadata/assetmetadata/
+### paste this url link in the browser for going to admin administration dashboard: http://127.0.0.1:8000/admin
+
+
+## Extra (option)
+If virtual environment not running(usually because placed in desktop or downloads)
+{NOTE: THIS IS ONLY A TEMPORARY FIX!!!!!}
+```bash
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+
+```
+Create superuser (id django administrator cannot login)
+```bash
+python manage.py createsuperuser
+```
+Clearing cache
+```bash
+# Remove cached Python bytecode
+git rm -r --cached "**/__pycache__" 2>$null
+git rm -r --cached "*.pyc" 2>$null
+
+# Remove Next.js build folders and dependencies
+git rm -r --cached "frontend/.next" 2>$null
+git rm -r --cached "frontend/node_modules" 2>$null
+git rm -r --cached "frontend/dist" 2>$null
+
+# Remove Django migration files (optional – only if you want to regenerate migrations)
+git rm -r --cached "backend/**/migrations" 2>$null
+
+# Commit with message
+git add .
+git commit -m "Remove cached build, pycache, pyc, node_modules, dist, and migrations"
+# Push to GitHub
+git push
+```
+
+
+
+
 ## Frontend
 
 install dependencies then run development server
@@ -49,7 +87,7 @@ cd frontend
 ```
 ```bash
 #install dependencies
-npm install @chakra-ui/react @chakra-ui/system @emotion/react @emotion/styled framer-motion bcryptjs
+npm install three "@loaders.gl/core" "@loaders.gl/gltf" "@chakra-ui/react" "@chakra-ui/system" "@emotion/react" "@emotion/styled" framer-motion bcryptjs
 #run development server
 npm run dev
 ```
@@ -66,9 +104,9 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000/login](http://localhost:3000/login) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
