@@ -21,9 +21,17 @@ export default function LoginPage() {
     if (typeof window === 'undefined') return;
 
     const token = localStorage.getItem('token');
-    if (token) {
+    const userStr = sessionStorage.getItem('user');
+
+    if (token && userStr) {
+      // both token and user exist – safe to go to main
       router.replace('/main');
       return;
+    }
+
+    if (token && !userStr) {
+      // stale token from old session – clear it so no redirect loop
+      localStorage.removeItem('token');
     }
 
     const handlePopState = () => {
@@ -37,6 +45,7 @@ export default function LoginPage() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [router]);
+
 
   const handleLogin = async (e) => {
     e?.preventDefault();
