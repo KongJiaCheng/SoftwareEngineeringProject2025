@@ -1,8 +1,0 @@
-{
-  "/api/auth/token/route": "app/api/auth/token/route.js",
-  "/api/asset_preview/route": "app/api/asset_preview/route.js",
-  "/main/page": "app/main/page.js",
-  "/login/page": "app/login/page.js",
-  "/edit/[id]/page": "app/edit/[id]/page.js",
-  "/_not-found/page": "app/_not-found/page.js"
-}
