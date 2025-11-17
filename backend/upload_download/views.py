@@ -268,13 +268,13 @@ def update_asset(request, pk: int):
         asset.delete()
         return Response(status=204)
 
-    # --- Normalise tags (string -> list) ---
+    # Normalise tags (string -> list)
     tags_in = data.get("tags")
     if isinstance(tags_in, str):
         tags = [t.strip() for t in tags_in.split(",") if t.strip()]
         data["tags"] = tags
 
-    # ---------- NEW: rename physical file if file_name changed ----------
+    # rename physical file if file_name changed
     new_file_name = data.get("file_name")
     if new_file_name:
         new_file_name = new_file_name.strip()
@@ -310,7 +310,6 @@ def update_asset(request, pk: int):
                         asset.file_location = new_basename
                 except Exception as e:
                     print("File rename error:", e)
-    # -------------------------------------------------------------------
 
     # only allow specific fields through serializer
     allowed_keys = ["file_name", "description", "tags"]
