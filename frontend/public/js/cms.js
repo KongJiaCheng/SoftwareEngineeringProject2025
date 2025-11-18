@@ -124,7 +124,7 @@ export function initCMS() {
         el('option', { value: '24h' }, ['Last 24h']),
         el('option', { value: '7d' }, ['Last 7 Days']),
         el('option', { value: '30d' }, ['Last 30 Days']),
-        el('option', { value: '30d or more' }, ['Older than 30 Days']),
+        el('option', { value: 'older30' }, ['Older than 30 Days']),
       ]),
     ]);
 
@@ -196,7 +196,8 @@ export function initCMS() {
           date === 'all' ||
           (date === '24h' && ageHours <= 24) ||
           (date === '7d' && ageHours <= 168) ||
-          (date === '30d' && ageHours <= 720);
+          (date === '30d' && ageHours <= 720)||
+          (date === 'older30' && ageHours > 720); 
 
         return (nameMatch || tagMatch) && typeMatch && sizeMatch && dateMatch;
       });
@@ -279,6 +280,7 @@ export function initCMS() {
       const ext = (asset.extension || '').toLowerCase();
       const is3D = ['glb','gltf','obj','fbx'].includes(ext);
       const isImg = ['jpg','jpeg','png','gif','webp'].includes(ext);
+      const isVideo = (asset.type || '').toLowerCase().startsWith('video') ||['mp4','mov','avi','wmv','mkv','webm'].includes(ext);
       const modal = el('div', { class:'modal', onclick: (e) => { if (e.target === e.currentTarget) modal.remove(); } });
       const panel = el('div', { class:'panel' });
       const left  = el('div', { class:'left' });
@@ -290,6 +292,8 @@ export function initCMS() {
         left.appendChild(el('babylon-viewer', { class:'viewer', source: prevURL, environment:'auto', 'auto-rotate':'0', 'camera-behaviors':'0', 'camera-auto-rotate':'false', 'camera-inertia':'0' }));
       } else if (prevURL && isImg) {
         left.appendChild(el('img', { class:'modal-img', src: prevURL, alt: asset.name || '' }));
+      } else if (prevURL && isVideo) {
+        left.appendChild(el('video', { class:'viewer', controls:false }, [el('source', { src: prevURL, type: (asset.type || 'video/mp4') })]));
       } else if (prevURL && asset.type === 'pdf') {
         left.appendChild(el('iframe', { class:'viewer', src: prevURL, style:'width:100%;height:100%;border:0' }));
       } else if (prevURL) {
@@ -306,6 +310,7 @@ export function initCMS() {
       add('File Type', asset.type?.toUpperCase() || ext.toUpperCase() || '—');
       add('Size', asset.size ? `${(asset.size/1048576).toFixed(2)} MB` : '—');
       add('Location', asset.location || '—');
+      add('Description', asset.description || '—');
       add('Created', asset.createdAt ? new Date(asset.createdAt).toLocaleString() : '—');
       add('Modified', asset.modifiedAt ? new Date(asset.modifiedAt).toLocaleString() : '—');
       add('Modified By', asset.modifiedBy || '—');

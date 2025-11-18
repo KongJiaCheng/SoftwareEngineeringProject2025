@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -8,6 +9,7 @@ import upload_download.views as viewsUploadDownload
 from . import auth_views  # login endpoint
 
 urlpatterns = [
+    path('', lambda request: redirect('/admin/')),      # Root "/" redirects to /admin/
     path("admin/", admin.site.urls),
 
     path("asset_metadata/", include("asset_metadata.urls")),   # handles metadata

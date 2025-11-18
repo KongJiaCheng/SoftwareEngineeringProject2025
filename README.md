@@ -79,15 +79,15 @@ git push
 
 ## Frontend
 
-install dependencies then run development server
+install dependencies then run development server(can use npm run only once set up)
 ```bash
-# got to backend
+# got to frontend
 cd frontend
 ```
 ```bash
 #install dependencies
 npm install three "@loaders.gl/core" "@loaders.gl/gltf" "@chakra-ui/react" "@chakra-ui/system" "@emotion/react" "@emotion/styled" framer-motion bcryptjs
-#run development server
+#run development server (can use npm run only when is set up)
 npm run dev
 ```
 
