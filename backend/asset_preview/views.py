@@ -67,13 +67,21 @@ class AssetPreviewViewSet(viewsets.ModelViewSet):
         thumb_url = _to_media_url(previews.get("thumbnail_path"))
         prev_url  = _to_media_url(previews.get("preview_path"))
 
+        # 🔹 extra: serialize the asset itself
+        asset_data = AssetMetadataLiteSerializer(
+            meta, context={"request": request}
+        ).data
+
         return Response(
-            {"previews": {
-                "kind": previews.get("kind"),
-                "thumbnail_url": thumb_url,
-                "preview_url": prev_url,
-            }},
-            status=status.HTTP_200_OK
+            {
+                "asset": asset_data,
+                "previews": {
+                    "kind": previews.get("kind"),
+                    "thumbnail_url": thumb_url,
+                    "preview_url": prev_url,
+                },
+            },
+            status=status.HTTP_200_OK,
         )
 
 
