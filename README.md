@@ -43,10 +43,9 @@ python manage.py runserver
 
 
 ## Extra (option)
-If virtual environment not running(usually because placed in desktop or downloads)
-{NOTE: THIS IS ONLY A TEMPORARY FIX!!!!!}
+If virtual environment not running(usually because placed in C drive)
 ```bash
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\.venv\Scripts\Activate.ps1
 
 ```
