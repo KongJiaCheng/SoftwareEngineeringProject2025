@@ -1,0 +1,147 @@
+{
+  "info": {
+    "_postman_id": "b1ddc1ac-3b5a-4bb0-9ba9-4c4498e2f9a1",
+    "name": "SpotSync Asset Preview API (Routing Test)",
+    "description": "Tests routing for /api/asset_preview/assets/ and its actions.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1\ufe0f\u20e3 List Assets (GET /asset_preview/assets/)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/asset_preview/assets/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "asset_preview",
+            "assets",
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "2\ufe0f\u20e3 Retrieve Asset (GET /asset_preview/assets/:id/)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/asset_preview/assets/{{previewAssetId}}/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "asset_preview",
+            "assets",
+            "{{previewAssetId}}",
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "3\ufe0f\u20e3 Get Preview URLs (GET /asset_preview/assets/:id/preview/)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/asset_preview/assets/{{previewAssetId}}/preview/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "asset_preview",
+            "assets",
+            "{{previewAssetId}}",
+            "preview",
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "4\ufe0f\u20e3 Download (GET /asset_preview/assets/:id/download/)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/asset_preview/assets/{{previewAssetId}}/download/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "asset_preview",
+            "assets",
+            "{{previewAssetId}}",
+            "download",
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "5\ufe0f\u20e3 List Versions (GET /asset_preview/assets/:id/versions/)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/asset_preview/assets/{{previewAssetId}}/versions/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "asset_preview",
+            "assets",
+            "{{previewAssetId}}",
+            "versions",
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "6\ufe0f\u20e3 Create New Version (POST /asset_preview/assets/:id/create_version/)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/asset_preview/assets/{{previewAssetId}}/create_version/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "asset_preview",
+            "assets",
+            "{{previewAssetId}}",
+            "create_version",
+            ""
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000/api"
+    },
+    {
+      "key": "previewAssetId",
+      "value": ""
+    }
+  ]
+}

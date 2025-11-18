@@ -8,6 +8,7 @@ from django.http import FileResponse, Http404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from PIL import Image
@@ -111,6 +112,7 @@ def _payload(a: AssetMetadata):
 
 @api_view(["POST"])  # upload
 @permission_classes([AllowAny])
+@authentication_classes([])
 def upload(request):
     upfile = request.FILES.get("file")
     if not upfile:
@@ -265,6 +267,7 @@ def _remove_physical_file(asset):
 
 @api_view(["PATCH"])
 @permission_classes([AllowAny])
+@authentication_classes([])
 def update_asset(request, pk: int):
     try:
         asset = AssetMetadata.objects.get(pk=pk)
@@ -351,7 +354,7 @@ def update_asset(request, pk: int):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def download(request, pk: int):
     from django.shortcuts import get_object_or_404
 

@@ -11,7 +11,7 @@
     {
       "name": "Upload file (POST /upload/)",
       "request": {
-        "method": "POST",
+        "method": "POST", 
         "header": [],
         "body": {
           "mode": "formdata",
