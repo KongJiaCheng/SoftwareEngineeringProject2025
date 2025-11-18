@@ -6,8 +6,8 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse, Http404
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from PIL import Image
@@ -18,6 +18,7 @@ from .serializers import AssetSerializer
 # ✅ Ensure Python knows the proper MIME types for GLB/GLTF
 mimetypes.add_type("model/gltf-binary", ".glb")
 mimetypes.add_type("model/gltf+json", ".gltf")
+
 
 
 def glb_polygon_count(full_path: str):
@@ -103,12 +104,13 @@ def _payload(a: AssetMetadata):
         "no_of_versions": a.no_of_versions,
         "created_at": a.created_at.isoformat() if a.created_at else None,
         "modified_at": a.modified_at.isoformat() if a.modified_at else None,
+        "modified_by_id": a.modified_by_id,
+        "modified_by_username": getattr(a.modified_by, "username", None),
     }
 
 
 @api_view(["POST"])  # upload
-@authentication_classes([])      # dev-open
-@permission_classes([AllowAny])  # dev-open
+@permission_classes([AllowAny])
 def upload(request):
     upfile = request.FILES.get("file")
     if not upfile:
@@ -220,25 +222,32 @@ def upload(request):
     # duration
     duration_td = _to_timedelta(duration_raw) if duration_raw else None
 
-    # create record for this version
+    # optional: modified_by from form-data (frontend can send it)
+    modified_by_id = None
+    modified_by_raw = request.POST.get("modified_by") or request.POST.get("modified_by_id")
+    if modified_by_raw not in (None, ""):
+        try:
+            modified_by_id = int(str(modified_by_raw))
+        except ValueError:
+            modified_by_id = None
+
     a = AssetMetadata.objects.create(
         file_name=file_name,
         file_type=ctype,
         file_size=size_mb,
-        file_location=saved_rel_path,   # e.g., "image/1/mylogo.png"
+        file_location=saved_rel_path,   # e.g. "image/1/mylogo.png"
         description=description,
         tags=tags,
         resolution=resolution,
         polygon_count=polygon_count,
         duration=duration_td,
         no_of_versions=total_versions,
+        modified_by_id=modified_by_id,
     )
 
-    # Update all rows for this file_name so they all show the same no_of_versions
     AssetMetadata.objects.filter(file_name=file_name).update(no_of_versions=total_versions)
 
     return Response(_payload(a), status=201)
-
 
 def _remove_physical_file(asset):
     rel = (asset.file_location or "").strip()
@@ -254,10 +263,8 @@ def _remove_physical_file(asset):
             print("File delete error:", e)
     return False
 
-
 @api_view(["PATCH"])
-@authentication_classes([])      # dev-open
-@permission_classes([AllowAny])  # dev-open
+@permission_classes([AllowAny])
 def update_asset(request, pk: int):
     try:
         asset = AssetMetadata.objects.get(pk=pk)
@@ -265,6 +272,14 @@ def update_asset(request, pk: int):
         return Response({"detail": "Not found."}, status=404)
 
     data = JSONParser().parse(request) if request.body else {}
+
+    modified_by_raw = data.get("modified_by") or data.get("modified_by_id")
+    modified_by_id = None
+    if modified_by_raw not in (None, ""):
+        try:
+            modified_by_id = int(str(modified_by_raw))
+        except ValueError:
+            modified_by_id = None
 
     # --- DELETE via PATCH flag ---
     if data.get("_delete") is True:
@@ -286,7 +301,7 @@ def update_asset(request, pk: int):
         tags = [t.strip() for t in tags_in.split(",") if t.strip()]
         data["tags"] = tags
 
-    # ---------- NEW: rename physical file if file_name changed ----------
+    # ---------- rename physical file if file_name changed ----------
     new_file_name = data.get("file_name")
     if new_file_name:
         new_file_name = new_file_name.strip()
@@ -295,14 +310,12 @@ def update_asset(request, pk: int):
         if new_file_name and new_file_name != old_file_name:
             rel = (asset.file_location or "").strip()
             if rel:
-                # current full path
                 old_full = os.path.join(
                     settings.MEDIA_ROOT,
                     rel.replace("/", os.sep)
                 )
                 folder = os.path.dirname(old_full)
 
-                # keep / adjust extension
                 _, old_ext = os.path.splitext(old_full)
                 base_new, ext_new = os.path.splitext(new_file_name)
                 if not ext_new:
@@ -314,7 +327,6 @@ def update_asset(request, pk: int):
                 try:
                     os.rename(old_full, new_full)
 
-                    # update file_location on the model (bypass serializer)
                     rel_dir = os.path.dirname(rel).replace("\\", "/")
                     if rel_dir:
                         asset.file_location = f"{rel_dir}/{new_basename}"
@@ -324,21 +336,22 @@ def update_asset(request, pk: int):
                     print("File rename error:", e)
     # -------------------------------------------------------------------
 
-    # only allow specific fields through serializer
     allowed_keys = ["file_name", "description", "tags"]
     cleaned = {k: v for k, v in data.items() if k in allowed_keys}
 
     serializer = AssetSerializer(asset, data=cleaned, partial=True)
     if serializer.is_valid():
-        serializer.save()  # uses updated asset.file_location from above
+        asset = serializer.save()
+        if modified_by_id is not None:
+            asset.modified_by_id = modified_by_id
+            asset.save(update_fields=["modified_by"])
         return Response(serializer.data)
 
     return Response(serializer.errors, status=400)
 
 
 @api_view(["GET"])
-@authentication_classes([]) # dev-open
-@permission_classes([AllowAny]) # dev-open
+@permission_classes([IsAuthenticated])
 def download(request, pk: int):
     from django.shortcuts import get_object_or_404
 

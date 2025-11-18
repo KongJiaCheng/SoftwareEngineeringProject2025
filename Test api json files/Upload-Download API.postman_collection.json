@@ -1,0 +1,119 @@
+{
+  "info": {
+    "_postman_id": "a24bdb01-6276-4c12-9234-535c9f90b754",
+    "name": "Upload/Download API",
+    "description": "Postman collection to test Django upload_download endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+    "_exporter_id": "50077625",
+    "_collection_link": "https://alust0-534520.postman.co/workspace/Lee-Je-Rel's-Workspace~2c7dadd5-2108-4ae5-8c2f-a92acabc30a8/collection/50077625-a24bdb01-6276-4c12-9234-535c9f90b754?action=share&source=collection_link&creator=50077625"
+  },
+  "item": [
+    {
+      "name": "Upload file (POST /upload/)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "value": "",
+              "type": "file"
+            },
+            {
+              "key": "file_name",
+              "value": "sample.glb",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "value": "Uploaded via Postman",
+              "type": "text"
+            },
+            {
+              "key": "tags",
+              "value": "[\"postman\",\"demo\"]",
+              "type": "text"
+            },
+            {
+              "key": "duration",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "polygon_count",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "resolution",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/upload/"
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let jsonData = {};",
+              "try { jsonData = pm.response.json(); } catch(e) { console.log('No JSON body'); }",
+              "console.log('Response JSON:', jsonData);",
+              "console.log('modified_by:', jsonData.modified_by);",
+              "console.log('modified_by_id:', jsonData.modified_by_id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update metadata (PATCH /upload/:id/)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Updated description from Postman\",\n  \"tags\": [\n    \"updated\",\n    \"via-postman\"\n  ]\n}"
+        },
+        "url": "{{baseUrl}}/upload/{{assetId}}/"
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let jsonData = {};",
+              "try { jsonData = pm.response.json(); } catch(e) { console.log('No JSON body'); }",
+              "console.log('Response JSON:', jsonData);",
+              "console.log('modified_by:', jsonData.modified_by);",
+              "console.log('modified_by_id:', jsonData.modified_by_id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Download file (GET /download/:id/)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/download/{{assetId}}/"
+      },
+      "response": []
+    }
+  ]
+}

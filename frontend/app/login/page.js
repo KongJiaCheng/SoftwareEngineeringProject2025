@@ -58,12 +58,14 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      // 🔥 Call Django directly and include credentials so sessionid cookie is set
+      const res = await fetch('http://127.0.0.1:8000/api/auth/login/', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
+        credentials: 'include', // VERY IMPORTANT
         body: JSON.stringify({ username, password }),
       });
 
@@ -85,7 +87,7 @@ export default function LoginPage() {
       console.log('Login response:', data);
       
       if (data.success) {
-        // Store user info
+        // Store user info (for frontend routing)
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('user', JSON.stringify(data.user));
           localStorage.setItem('token', 'logged-in');
@@ -155,7 +157,7 @@ export default function LoginPage() {
               <circle cx="12" cy="9" r="2" fill="#667eea"/>
             </svg>
           </div>
-          <h1>Welcome Back</h1>
+          <h1 className="mv-title">ModelVerse</h1>
           <p>Sign in to your account to continue</p>
         </div>
 
@@ -385,6 +387,17 @@ export default function LoginPage() {
           .login-header h1 {
             font-size: 24px;
           }
+        }
+
+        .mv-title {
+          font-size: 50px;
+          font-weight: 700;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          font-family: 'Poppins', 'Segoe UI', sans-serif;
+          margin: 0;
+          margin-bottom: 10px;
         }
       `}</style>
     </div>

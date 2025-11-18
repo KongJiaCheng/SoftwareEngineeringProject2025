@@ -115,21 +115,28 @@ export default function EditPage() {
     if (!asset) return;
     setBusy(true);
     try {
-      // ensure tags is a clean string array
       const tagsArray = (asset.tags || [])
         .map((t) => String(t).trim())
         .filter(Boolean);
 
+      const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+      const userId = user.id || null;
+
       const body = {
         file_name: asset.file_name,
         description: asset.description || "",
-        tags: tagsArray, // <--- final array sent to backend
+        tags: tagsArray,
         duration: asset.duration || null,
         polygon_count:
           asset.polygon_count === "" || asset.polygon_count == null
             ? null
             : Number(asset.polygon_count),
       };
+
+
+      if (userId) {
+        body.modified_by = userId;
+      }
 
       console.log("PATCH body being sent:", body);
 
@@ -144,14 +151,14 @@ export default function EditPage() {
       });
 
       if (!r.ok) throw new Error(`Save failed: ${r.status} ${await r.text()}`);
-      //alert("✅ Updated successfully");
-      window.location.href = "/main"; // go back to main page
+      window.location.href = "/main";
     } catch (e) {
       alert("❌ Failed to update: " + e.message);
     } finally {
       setBusy(false);
     }
   }
+
 
   async function remove() {
     if (!confirm("Delete this asset?")) return;
@@ -166,17 +173,10 @@ export default function EditPage() {
       body: JSON.stringify({ _delete: true }),
     }).catch(() => {});
 
-    // short delay (optional)
     setTimeout(() => {
       window.location.href = "/main";
     }, 200);
   }
-
-
-
-
-
-
 
   if (loading) return <p style={{ color: "#e5e7eb" }}>Loading...</p>;
   if (!asset) return <p style={{ color: "#f97373" }}>Not found</p>;

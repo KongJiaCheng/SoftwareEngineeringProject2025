@@ -110,6 +110,7 @@ export function initCMS() {
         el('option', { value: 'all' }, ['All Types']),
         el('option', { value: '3d' }, ['3D Assets']),
         el('option', { value: 'image' }, ['Images']),
+        el('option', { value: 'video' }, ['Videos']),
         el('option', { value: 'other' }, ['Other Files']),
       ]),
       el('select', { class: 'filter-select', id: 'filterSize', onchange: applyFilters }, [
@@ -123,17 +124,21 @@ export function initCMS() {
         el('option', { value: '24h' }, ['Last 24h']),
         el('option', { value: '7d' }, ['Last 7 Days']),
         el('option', { value: '30d' }, ['Last 30 Days']),
+        el('option', { value: '30d or more' }, ['Older than 30 Days']),
       ]),
     ]);
 
+    injectCSS(`.cms-topbar{position:relative;display:flex;align-items:center;padding:14px 24px;background:#131833}.cms-title{margin-right:auto;font-size:18px;font-weight:600;color:#a277ff}.cms-center{position:absolute;left:50%;transform:translateX(-50%);font-size:18px;font-weight:600;color:#a277ff}.topbar-buttons{margin-left:auto;display:flex;gap:10px}`);
+
+    const welcome = JSON.parse(sessionStorage.getItem("user") || "{}").username || "";
     const root = el('div',{class:'cms-root'},[
       el('div',{class:'cms-topbar'},[
         el('div',{class:'cms-title'},['ModelVerse']),
+        el('div',{class:'cms-center'},[`Welcome, ${welcome}`]),
         el('div',{class:'topbar-buttons'},[
           el('button',{class:'btn',onclick:()=>window.location.replace('/upload')},['Upload']),
-          el('button',{class:'btn',style:{backgroundColor:'#ff4d4d',color:'white',fontWeight:'600'},
-            onclick:()=>{localStorage.removeItem('token');sessionStorage.removeItem('user');window.location.replace('/login')}},['Logout'])
-        ])
+          el('button',{class:'btn',style:{backgroundColor:'#ff4d4d',color:'white',fontWeight:'600'},onclick:()=>{localStorage.removeItem('token');
+            sessionStorage.removeItem('user');window.location.replace('/login');}},['Logout'])])
       ]),
       el('div',{class:'cms-body'},[filterBar,grid])
     ]);
@@ -159,17 +164,25 @@ export function initCMS() {
 
       const now = new Date();
       const filtered = allAssets.filter(a => {
+        // 🔍 TEXT SEARCH FILTER
         const nameMatch = (a.name || '').toLowerCase().includes(search);
         const tagMatch = (a.tags || []).some(t => (t || '').toLowerCase().includes(search));
 
-        const is3d = ['glb','gltf','obj','fbx','zip'].includes((a.extension || '').toLowerCase());
-        const isImg = (a.type === 'image') || (a.tags || []).includes('image');
+        // 📁 TYPE FILTER
+        const name = (a.name || '').toLowerCase();
+        const ext  = ((a.extension || '') || (name.includes('.') ? name.split('.').pop() : '')).toLowerCase();
+        const is3d    = ['glb','gltf','fbx','obj','zip'].includes(ext);
+        const isImg   = ((a.type || '').toLowerCase().startsWith('image') || ['png','jpg','jpeg','gif','webp','bmp','svg','tiff','ico'].includes(ext));
+        const isVideo = ((a.type || '').toLowerCase().startsWith('video') || ['mp4','mov','avi','wmv','mkv','flv','webm'].includes(ext));
         const typeMatch =
           type === 'all' ||
           (type === '3d' && is3d) ||
           (type === 'image' && isImg) ||
-          (type === 'other' && !is3d && !isImg);
+          (type === 'video' && isVideo) ||
+          (type === 'other' && !is3d && !isImg && !isVideo);
 
+
+        // 📏 SIZE FILTER
         const sizeMB = (a.size || 0) / 1048576;
         const sizeMatch =
           size === 'all' ||
@@ -177,6 +190,7 @@ export function initCMS() {
           (size === 'medium' && sizeMB >= 5 && sizeMB <= 50) ||
           (size === 'large' && sizeMB > 50);
 
+        // 🕒 DATE FILTER 
         const ageHours = (now - new Date(a.uploadedAt || a.createdAt || now)) / 36e5;
         const dateMatch =
           date === 'all' ||
@@ -273,7 +287,7 @@ export function initCMS() {
       const prevURL = previewInfo?.preview_url || asset.url;
 
       if (prevURL && is3D) {
-        left.appendChild(el('babylon-viewer', { class:'viewer', source: prevURL, environment:'auto' }));
+        left.appendChild(el('babylon-viewer', { class:'viewer', source: prevURL, environment:'auto', 'auto-rotate':'0', 'camera-behaviors':'0', 'camera-auto-rotate':'false', 'camera-inertia':'0' }));
       } else if (prevURL && isImg) {
         left.appendChild(el('img', { class:'modal-img', src: prevURL, alt: asset.name || '' }));
       } else if (prevURL && asset.type === 'pdf') {
@@ -322,7 +336,7 @@ export function initCMS() {
       // Actions
       const actions = el('div', { class:'row' }, [
         el('button', { class: 'btn', onclick: () => { window.location.href = `/edit/${asset.id}`; } }, ['Edit']),
-        el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doDownload(data);} }, ['Download']),
+        el('button', { class: 'btn', onclick: (e)=>{ e.stopPropagation(); doDownload(asset);} }, ['Download']),
         el('button', { class:'btn', onclick: ()=>modal.remove() }, ['Close']),
       ]);
       right.appendChild(actions);
@@ -344,7 +358,6 @@ export function initCMS() {
 
         allAssets = results.map(r => {
           const ext = fileExtFromName(r.file_name);
-          // Build a browser-usable URL from your stored file_location (e.g. "image/logo.png")
           const webPath = r.file_location
             ? (MEDIA_BASE + String(r.file_location).replace(/^\/+/, ''))
             : null;
@@ -355,9 +368,9 @@ export function initCMS() {
           return {
             id: r.id,
             name: r.file_name || '',
-            type: r.file_type || (isImg ? 'image' : ''), // UI hint if backend returned OTHER
+            type: r.file_type || (isImg ? 'image' : ''),
             extension: ext,
-            size: (typeof r.file_size === 'number' ? r.file_size * 1048576 : 0), // MB -> bytes
+            size: (typeof r.file_size === 'number' ? r.file_size * 1048576 : 0),
             location: r.file_location || '',
             description: r.description || '',
             tags: Array.isArray(r.tags) ? r.tags : [],
@@ -365,8 +378,8 @@ export function initCMS() {
             createdAt: r.created_at || null,
             modifiedAt: r.modified_at || null,
             resolution: r.resolution || null,
+            modifiedBy: r.modified_by_username || '',  
 
-            // 🔑 URLs for preview/thumbnail
             url: webPath,
             thumbnail_url: isImg ? webPath : null,
           };

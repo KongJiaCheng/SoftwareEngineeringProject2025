@@ -20,14 +20,12 @@ function parseTags(value) {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return [];
-    // try JSON array first
     try {
       const parsed = JSON.parse(trimmed);
       if (Array.isArray(parsed)) {
         return parsed.map((t) => String(t)).filter(Boolean);
       }
     } catch {}
-    // fallback: comma / newline list
     return trimmed
       .split(/[,\n]/)
       .map((t) => t.trim())
@@ -283,10 +281,21 @@ export default function UploadPage() {
           const w = img.naturalWidth || img.width || 0;
           const h = img.naturalHeight || img.height || 0;
           if (w && h) {
+            const resStr = `${Math.round(w)}x${Math.round(h)}`;
             setResProbe((prev) => ({
               ...prev,
-              [f.name]: `${Math.round(w)}x${Math.round(h)}`,
+              [f.name]: resStr,
             }));
+            setLocalEdits((prev) => {
+              const existing = prev[f.name] || primedFrom(f);
+              return {
+                ...prev,
+                [f.name]: {
+                  ...existing,
+                  resolution: existing.resolution || resStr,
+                },
+              };
+            });
           }
           URL.revokeObjectURL(url);
         };
@@ -308,7 +317,21 @@ export default function UploadPage() {
           const vw = v.videoWidth || 0;
           const vh = v.videoHeight || 0;
           if (vw && vh) {
-            setResProbe((prev) => ({ ...prev, [f.name]: `${vw}x${vh}` }));
+            const resStr = `${vw}x${vh}`;
+            setResProbe((prev) => ({ ...prev, [f.name]: resStr }));
+            setLocalEdits((prev) => {
+              const existing = prev[f.name] || primedFrom(f);
+              return {
+                ...prev,
+                [f.name]: {
+                  ...existing,
+                  duration:
+                    existing.duration ||
+                    (Number.isFinite(secs) && secs > 0 ? secs : ""),
+                  resolution: existing.resolution || resStr,
+                },
+              };
+            });
           }
           URL.revokeObjectURL(url);
         };
@@ -482,6 +505,12 @@ export default function UploadPage() {
     form.append("file_name", finalName);
     form.append("description", meta.description || "");
 
+    // who is uploading / modifying
+    try {
+      const u = JSON.parse(sessionStorage.getItem("user") || "{}");
+      if (u.id) form.append("modified_by", String(u.id));
+    } catch {}
+
     // convert tags array to JSON string when sending
     let tagsToSend = meta.tags;
     if (Array.isArray(tagsToSend)) {
@@ -489,10 +518,11 @@ export default function UploadPage() {
     }
     form.append("tags", tagsToSend || "[]");
 
-    if (meta.resolution) form.append("resolution", String(meta.resolution));
+    const resToSend = meta.resolution || resProbe[key];
+    if (resToSend) form.append("resolution", String(resToSend));
 
     if (isVideo(meta.file_type || file.type)) {
-      const d = String(meta.duration || "").trim();
+      const d = String(meta.duration || vidDur[key] || "").trim();
       if (d) form.append("duration", d);
     }
 
@@ -716,7 +746,7 @@ export default function UploadPage() {
         const polygonValue =
           server.polygon_count ?? baseEdit.polygon_count ?? "";
 
-        // derive tags array + input buffer
+        // Derive tags array + input buffer
         const rawTags = server.tags ?? baseEdit.tags ?? [];
         const tagsArray = parseTags(rawTags);
         const tagInputValue = baseEdit.tagInput || "";
@@ -983,7 +1013,7 @@ export default function UploadPage() {
                   "span",
                   { style: { color: "#22c55e" } },
                   "Saved ✓",
-                  setTimeout(() => (window.location.replace('main')), 1000)
+                  setTimeout(() => (window.location.replace("main")), 1000)
                 )
               : null,
             h(
@@ -1083,7 +1113,7 @@ export default function UploadPage() {
         "button",
         {
           type: "button",
-          onClick: () => window.location.replace('/main'), // navigate to main page
+          onClick: () => window.location.replace("/main"), // navigate to main page
           style: {
             padding: "10px 16px",
             borderRadius: 8,
