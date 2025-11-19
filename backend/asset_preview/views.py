@@ -48,6 +48,22 @@ class AssetPreviewViewSet(viewsets.ModelViewSet):
     queryset = AssetMetadata.objects.all().order_by("-modified_at", "-created_at")
     serializer_class = AssetMetadataLiteSerializer
     permission_classes = [IsAuthenticated]  # default: protect everything
+<<<<<<< HEAD
+
+    # ⬇ Public reads, private writes
+    def get_permissions(self):
+        public_actions = {"list", "retrieve", "preview", "download", "versions"}
+        if getattr(self, "action", None) in public_actions:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    # Ensure basic info is up-to-date on list (file_size/file_type), then serialize
+    def list(self, request, *args, **kwargs):
+        media_root = Path(settings.MEDIA_ROOT)
+        for meta in self.get_queryset():
+            ensure_basic_info(meta, media_root)
+        return super().list(request, *args, **kwargs)
+=======
+>>>>>>> origin/main
 
     # ⬇ Public reads, private writes
     def get_permissions(self):
